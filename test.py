@@ -15,7 +15,7 @@ SCREEN_RECT = Rect((0,0), RESOLUTION)
 BULLET_INITIAL_VELOCITY = 1
 RENDER_BB = False 
 RENDER_FORCEFIELD = False
-WORLD_RECT = Rect(-RESOLUTION[0]*4, -RESOLUTION[1]*4, RESOLUTION[0]*5, RESOLUTION[1]*5)
+WORLD_RECT = Rect(0, 0, 5000, 5000)
 
 window = pygame.display.set_mode(RESOLUTION)
 screen = pygame.display.get_surface()
@@ -111,11 +111,12 @@ class Ship(object):
 		self.bb.x = self.position.x - img.get_width()/2
 		self.bb.y = self.position.y - img.get_height()/2
 
-	def render(self, surface):
+	def render(self, surface, viewport):
 		a = util.angle_between_v(self.direction, self.graphic_direction)
 		img = pygame.transform.rotozoom(self.graphic, a, self.graphic_scale)
-		px = self.position.x - img.get_width()/2
-		py = self.position.y - img.get_height()/2
+		pos = viewport.get_coordinates(self.position)
+		px = pos.x - img.get_width()/2
+		py = pos.y - img.get_height()/2
 		surface.blit(img, (px, py))
 
 		if RENDER_BB:
@@ -125,6 +126,19 @@ class Ship(object):
 			px = int(self.position.x)
 			py = int(self.position.y)
 			pygame.draw.circle(surface, (0, 0, 255), (px, py), self.forcefield_radius, 1) 
+
+class Mothership(Ship):
+	def move_left(self, dt):
+		self.velocity += Vector2(-1,0)*dt*self.thrust
+
+	def move_right(self, dt):
+		self.velocity += Vector2(1,0)*dt*self.thrust
+
+	def move_up(self, dt):
+		self.velocity += Vector2(0,-1)*dt*self.thrust
+
+	def move_down(self, dt):
+		self.velocity += Vector2(0,1)*dt*self.thrust
 
 class Bullet(object):
 	def __init__(self, position, velocity, radius, attack_power, ttl):
@@ -150,16 +164,17 @@ class Bullet(object):
 		if self.ttl < 0:
 			self.die = True
 
-	def render(self, surface):
-		px = int(self.position.x)
-		py = int(self.position.y)
+	def render(self, surface, viewport):
+		pos = viewport.get_coordinates(self.position)
+		px = int(pos.x)
+		py = int(pos.y)
 		pygame.draw.circle(surface, (255, 255, 0), (px, py), self.radius) 
 
 		if RENDER_BB:
 			pygame.draw.rect(surface, (255, 255, 255), self.bb)
 
 
-class PlayerController(object):
+class MothershipPlayerController(object):
 	def __init__(self, ship):
 		self.ship = ship
 
@@ -181,21 +196,19 @@ class PlayerController(object):
 		return a
 
 	def update(self, dt, entities):
-		if not SCREEN_RECT.colliderect(self.ship.bb):
-			self.head_for(Vector2(SCREEN_RECT.center))
+		if not WORLD_RECT.colliderect(self.ship.bb):
+			self.head_for(Vector2(WORLD_RECT.center))
 		else:
 			keystate = pygame.key.get_pressed()
 
 			if keystate[K_w]:
-				self.ship.accelerate(dt)
+				self.ship.move_up(dt)
 			if keystate[K_s]:
-				self.ship.decelerate(dt)
+				self.ship.move_down(dt)
 			if keystate[K_a]:
-				self.ship.turn_left(dt)
+				self.ship.move_left(dt)
 			if keystate[K_d]:
-				self.ship.turn_right(dt)
-			if keystate[K_SPACE]:
-				self.ship.fire()
+				self.ship.move_right(dt)
 
 class AIShipController(object):
 	def __init__(self, ship, cruise_speed):
@@ -253,22 +266,6 @@ class AIShipController(object):
 			self.stop(dt)
 			self.target = self.ship.last_detected
 
-class DummyTarget(object):
-	def __init__(self, position):
-		self.position = position
-
-	def render(self, surface):
-		px = int(self.position.x)
-		py = int(self.position.y)
-		pygame.draw.circle(surface, (0, 255, 0), (px, py), 10, 2)
-
-class MouseTarget(object):
-	def __init__(self):
-		self.position = Vector2()
-
-	def update(self, dt, entities):
-		self.position = pygame.mouse.get_pos()
-
 class Minimap(object):
 	def __init__(self, map_size, world_size):
 		self.map_size = map_size
@@ -276,34 +273,59 @@ class Minimap(object):
 		self.entities = []
 
 	def project_position(self, position):
-		W = self.world_size.x
-		H = self.world_size.y
-		w = RESOLUTION[0]
-		h = RESOLUTION[1]
-		return self.map_size*(position + Vector2(W/2 - w/2,H/2 - h/2))/Vector2(W,H)
+		return position*self.map_size/self.world_size
 
 	def update(self, dt, entities):
 		self.entities = entities
 
-	def render(self, surface):
+	def render(self, surface, viewport):
 		w = int(self.map_size.x)
 		h = int(self.map_size.y)
 		minimap = pygame.Surface((w,h))
 		minimap.fill((0,0,0))
 		for entity in self.entities:
 			if isinstance(entity, Ship):
+				width = 1
+				if isinstance(entity, Mothership):
+					width = 3
+
 				color = (255,0,0) if entity.team == "red" else (0,0,255)
 				ppos = self.project_position(entity.position)
 				px = int(ppos.x)
 				py = int(ppos.y)
-				pygame.draw.circle(minimap, color, (px, py), 2)
+				pygame.draw.circle(minimap, color, (px, py), width)
 			elif isinstance(entity, Bullet):
 				ppos = self.project_position(entity.position)
 				px = int(ppos.x)
 				py = int(ppos.y)
 				pygame.draw.circle(minimap, (255, 255, 0), (px, py), 1)
+			elif isinstance(entity, Viewport):
+				ppos = self.project_position(entity.position)
+				ppost = (int(ppos.x), int(ppos.y))
+				psize = self.project_position(Vector2(RESOLUTION[0], RESOLUTION[1]))
+				psizet = (int(psize.x), int(psize.y))
+				pygame.draw.rect(minimap, (255,255,255), Rect(ppost, psizet), 1) 
 
 		surface.blit(minimap, (0, RESOLUTION[1] - self.map_size.y))
+
+class Viewport:
+	def __init__(self, position):
+		self.position = position
+
+	def get_coordinates(self, position):
+		return position - self.position
+
+	def update(self, dt, entities):
+		mp = pygame.mouse.get_pos()
+
+		if mp[0] > RESOLUTION[0]-100:
+			self.position.x += 10
+		if mp[0] < 100:
+			self.position.x -= 10
+		if mp[1] > RESOLUTION[1]-100:
+			self.position.y += 10
+		if mp[1] < 100:
+			self.position.y -= 10
 
 clock = pygame.time.Clock()
 
@@ -326,7 +348,7 @@ fighterParams = {
 }
 
 mothershipParams = {
-	"position" : Vector2(400, 400),
+	"position" : Vector2(2500, 2500),
 	"direction" : Vector2(-1, 0),
 	"length" : 10,
 	"team" : "red",
@@ -339,22 +361,24 @@ mothershipParams = {
 	"sensor_range" : 600,
 	"forcefield_radius" : 200,
 	"forcefield_strength" : 0.00001,		
-	"graphic" : pygame.image.load("/home/dementati/Downloads/mothership.png"),
+	"graphic" : pygame.image.load("/home/dementati/Downloads/mother.png"),
 	"graphic_direction" : Vector2(-1, 0),
 	"graphic_scale" : 0.5
 }
 
-
 entities = []
 
-mothership = Ship(mothershipParams, entities)
-controller = PlayerController(mothership)
+viewport = Viewport(Vector2(100, 100))
+
+mothership = Mothership(mothershipParams, entities)
+controller = MothershipPlayerController(mothership)
+
 entities.append(mothership)
 entities.append(controller)
 
-for i in range(10):
+for i in range(20):
 	params = copy.deepcopy(fighterParams)
-	params["position"] = Vector2(random.randint(0, RESOLUTION[0]), random.randint(0, RESOLUTION[1]))
+	params["position"] = Vector2(random.randint(0, WORLD_RECT.width), random.randint(0, WORLD_RECT.height))
 	
 	if i % 2 == 0:
 		params["team"] = "red" 
@@ -373,6 +397,8 @@ for i in range(10):
 	entities.append(controller)
 
 entities.append(Minimap(Vector2(200, 200), Vector2(WORLD_RECT.width, WORLD_RECT.height)))
+
+entities.append(viewport)
 
 while True:
 	dt = clock.tick(50)
@@ -405,7 +431,7 @@ while True:
 	screen.blit(background, (0, 0))
 	for entity in entities:
 		if hasattr(entity, "render"):
-			entity.render(screen)
+			entity.render(screen, viewport)
 
 	pygame.display.flip()
 
