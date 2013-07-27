@@ -13,7 +13,8 @@ import util
 RESOLUTION = (1024, 768)
 SCREEN_RECT = Rect((0,0), RESOLUTION)
 BULLET_INITIAL_VELOCITY = 1
-RENDER_BB = False
+RENDER_BB = False 
+RENDER_FORCEFIELD = True
 
 window = pygame.display.set_mode(RESOLUTION)
 screen = pygame.display.get_surface()
@@ -22,7 +23,6 @@ background = pygame.image.load("/home/dementati/Downloads/background.jpg")
 
 class Ship(object):
 	def __init__(self, params, entities):
-
 		self.position = params["position"]
 		self.direction = params["direction"]
 		self.length = params["length"]
@@ -36,6 +36,9 @@ class Ship(object):
 		self.sensor_range = params["sensor_range"]
 		self.forcefield_radius = params["forcefield_radius"]
 		self.forcefield_strength = params["forcefield_strength"]
+		self.graphic = params["graphic"]
+		self.graphic_direction = params["graphic_direction"]
+		self.graphic_scale = params["graphic_scale"]
 		self.bb = Rect(0,0,0,0)
 		self.last_fired = 0
 		self.entities = entities
@@ -62,7 +65,7 @@ class Ship(object):
 	def fire(self):
 		if self.last_fired > self.fire_rate:
 			v = BULLET_INITIAL_VELOCITY*self.direction
-			self.entities.append(Bullet(self.position.copy() + self.direction*10, v, 3, self.attack_power))
+			self.entities.append(Bullet(self.position.copy() + self.direction*30, v, 3, self.attack_power))
 			self.last_fired = 0
 
 	def collides(self, entity):
@@ -73,30 +76,20 @@ class Ship(object):
 			self.shield -= entity.attack_power
 
 	def at_relative_position(self, entity, dt):
-		if type(entity) is Ship:
+		if isinstance(entity, Ship):
 			v = entity.position - self.position
 			if v.get_magnitude() < self.forcefield_radius:
-				print "TROLOL"
-				self.velocity -= v*dt*self.forcefield_strength
-
-	def update_bb(self):
-		p1 = self.position - self.direction*self.length/2
-		p2 = self.position + self.direction*self.length/2
-		tl = (min([p1.x, p2.x]), min([p1.y, p2.y]))
-		br = (max([p1.x, p2.x]), max([p1.y, p2.y]))
-		self.bb.topleft = tl
-		self.bb.size = (br[0] - tl[0], br[1] - tl[1])
+				entity.velocity += v*dt*self.forcefield_strength
 
 	def detect_enemies(self, entities):
 		self.last_detected = None
 		min_dist = 99999
 		for entity in entities:
-			if entity != self and type(entity) is Ship and entity.team != self.team:
+			if entity != self and isinstance(entity, Ship) and entity.team != self.team:
 				dist = (entity.position - self.position).get_magnitude()
 				if dist < self.sensor_range and dist < min_dist:
 					self.last_detected = entity
 					min_dist = dist
-
 
 	def update(self, dt, entities):
 		self.position += dt*self.velocity
@@ -110,13 +103,27 @@ class Ship(object):
 		if self.last_fired < 9999999:
 			self.last_fired += dt
 
+	def update_bb(self):
+		a = util.angle_between_v(self.direction, self.graphic_direction)
+		img = pygame.transform.rotozoom(self.graphic, a, self.graphic_scale)
+		self.bb = img.get_rect()
+		self.bb.x = self.position.x - img.get_width()/2
+		self.bb.y = self.position.y - img.get_height()/2
+
 	def render(self, surface):
-		p1 = self.position - self.direction*self.length/2
-		p2 = self.position + self.direction*self.length/2
-		pygame.draw.line(surface, self.color, p1.as_tuple(), p2.as_tuple(), 3)  
+		a = util.angle_between_v(self.direction, self.graphic_direction)
+		img = pygame.transform.rotozoom(self.graphic, a, self.graphic_scale)
+		px = self.position.x - img.get_width()/2
+		py = self.position.y - img.get_height()/2
+		surface.blit(img, (px, py))
 
 		if RENDER_BB:
-			pygame.draw.rect(surface, (255, 255, 255), self.bb)
+			pygame.draw.rect(surface, (255, 255, 255), self.bb, 1) 
+
+		if RENDER_FORCEFIELD:
+			px = int(self.position.x)
+			py = int(self.position.y)
+			pygame.draw.circle(surface, (0, 0, 255), (px, py), self.forcefield_radius, 1) 
 
 class Bullet(object):
 	def __init__(self, position, velocity, radius, attack_power):
@@ -147,6 +154,7 @@ class Bullet(object):
 
 		if RENDER_BB:
 			pygame.draw.rect(surface, (255, 255, 255), self.bb)
+
 
 class PlayerController(object):
 	def __init__(self, ship):
@@ -262,31 +270,69 @@ clock = pygame.time.Clock()
 
 entities_to_add = []
 
-shipParams = {
+fighterParams = {
 	"position" : Vector2(100, 100),
 	"direction" : Vector2(0, 1),
 	"length" : 10,
 	"team" : "red",
 	"thrust" : 0.0001,
 	"max_speed" : 20,
-	"turn_speed" : 0.5*pi/180,
+	"turn_speed" : 0.1*pi/180,
 	"fire_rate" : 250,
-	"shield" : 100,
-	"attack_power" : 10,
+	"shield" : 1000,
+	"attack_power" : 1,
 	"sensor_range" : 600,
 	"forcefield_radius" : 50,
 	"forcefield_strength" : 0.00001
 }
 
+mothershipParams = {
+	"position" : Vector2(400, 400),
+	"direction" : Vector2(-1, 0),
+	"length" : 10,
+	"team" : "red",
+	"thrust" : 0.00001,
+	"max_speed" : 5,
+	"turn_speed" : 0.01*pi/180,
+	"fire_rate" : 250,
+	"shield" : 10000,
+	"attack_power" : 10,
+	"sensor_range" : 600,
+	"forcefield_radius" : 200,
+	"forcefield_strength" : 0.00001,		
+	"graphic" : pygame.image.load("/home/dementati/Downloads/mothership.png"),
+	"graphic_direction" : Vector2(-1, 0),
+	"graphic_scale" : 0.5
+}
+
+
 entities = []
+
+mothership = Ship(mothershipParams, entities)
+controller = PlayerController(mothership)
+entities.append(mothership)
+entities.append(controller)
+
 for i in range(10):
-	params = copy.deepcopy(shipParams)
+	params = copy.deepcopy(fighterParams)
 	params["position"] = Vector2(random.randint(0, RESOLUTION[0]), random.randint(0, RESOLUTION[1]))
-	params["team"] = "red" if i % 2 == 0 else "blue"
+	
+	if i % 2 == 0:
+		params["team"] = "red" 
+		params["graphic"] = pygame.image.load("/home/dementati/Downloads/fighter1.png")
+		params["graphic_direction"] = Vector2(0, -1)
+		params["graphic_scale"] = 0.1
+	else:
+		params["team"] = "blue"
+		params["graphic"] = pygame.image.load("/home/dementati/Downloads/fighter2.png")
+		params["graphic_direction"] = Vector2(0, 1)
+		params["graphic_scale"] = 0.1
+
 	ship = Ship(params, entities_to_add)
 	controller = AIShipController(ship, 0.5)
 	entities.append(ship)
 	entities.append(controller)
+
 
 while True:
 	dt = clock.tick(50)
@@ -295,8 +341,6 @@ while True:
 	for event in pygame.event.get():
 		if event.type == QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):
 			sys.exit(0)
-		else:
-			print event
 
 	for entity in entities:
 		if hasattr(entity, "update"):
