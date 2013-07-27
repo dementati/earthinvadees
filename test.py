@@ -12,7 +12,7 @@ import util
 
 RESOLUTION = (1024, 768)
 SCREEN_RECT = Rect((0,0), RESOLUTION)
-BULLET_INITIAL_VELOCITY = 0.1
+BULLET_INITIAL_VELOCITY = 1
 RENDER_BB = False
 
 window = pygame.display.set_mode(RESOLUTION)
@@ -34,10 +34,12 @@ class Ship(object):
 		self.shield = params["shield"]
 		self.attack_power = params["attack_power"]
 		self.sensor_range = params["sensor_range"]
+		self.forcefield_radius = params["forcefield_radius"]
+		self.forcefield_strength = params["forcefield_strength"]
 		self.bb = Rect(0,0,0,0)
 		self.last_fired = 0
 		self.entities = entities
-		self.velocity = 0
+		self.velocity = Vector2()
 		self.last_detected = None
 
 		if self.team == "blue":
@@ -46,12 +48,10 @@ class Ship(object):
 			self.color = Vector3(255, 0, 0)
 
 	def accelerate(self, dt):
-		if self.velocity < self.max_speed:
-			self.velocity += dt*self.thrust
+		self.velocity += dt*self.thrust*self.direction
 
 	def decelerate(self, dt):
-		if self.velocity > 0:
-			self.velocity -= dt*self.thrust
+		self.velocity -= dt*self.thrust*self.direction
 
 	def turn_left(self, dt):
 		self.direction = util.rotate_v(self.direction, -dt*self.turn_speed)
@@ -61,8 +61,8 @@ class Ship(object):
 
 	def fire(self):
 		if self.last_fired > self.fire_rate:
-			v = self.velocity + BULLET_INITIAL_VELOCITY
-			self.entities.append(Bullet(self.position.copy() + self.direction*10, v*self.direction, 3, self.attack_power))
+			v = BULLET_INITIAL_VELOCITY*self.direction
+			self.entities.append(Bullet(self.position.copy() + self.direction*10, v, 3, self.attack_power))
 			self.last_fired = 0
 
 	def collides(self, entity):
@@ -71,6 +71,13 @@ class Ship(object):
 	def collided(self, entity):
 		if type(entity) is Bullet:
 			self.shield -= entity.attack_power
+
+	def at_relative_position(self, entity, dt):
+		if type(entity) is Ship:
+			v = entity.position - self.position
+			if v.get_magnitude() < self.forcefield_radius:
+				print "TROLOL"
+				self.velocity -= v*dt*self.forcefield_strength
 
 	def update_bb(self):
 		p1 = self.position - self.direction*self.length/2
@@ -92,7 +99,7 @@ class Ship(object):
 
 
 	def update(self, dt, entities):
-		self.position += dt*self.direction*self.velocity
+		self.position += dt*self.velocity
 		self.update_bb()
 
 		self.detect_enemies(entities)
@@ -180,14 +187,15 @@ class PlayerController(object):
 				self.ship.fire()
 
 class AIShipController(object):
-	def __init__(self, ship):
+	def __init__(self, ship, cruise_speed):
 		self.ship = ship
 		self.target = None
+		self.cruise_speed = cruise_speed
 
 	def set_target(self, target):
 		self.target = target
 
-	def head_for(self, position):
+	def head_for(self, dt, position):
 		# Change direction
 		s2t = position - self.ship.position
 		a = util.angle_between_v(self.ship.direction, s2t)
@@ -198,20 +206,32 @@ class AIShipController(object):
 
 		# Change speed
 		if math.fabs(a) < 10:
-			self.ship.accelerate(dt)	
-		elif math.fabs(a) > 20:
-			self.ship.decelerate(dt)
+			v = util.project_v(self.ship.velocity, self.ship.direction)
+			if v.get_magnitude() < self.cruise_speed:
+				self.ship.accelerate(dt)	
+			else:
+				self.ship.decelerate(dt)
 
 		return a
 
+	def stop(self, dt):
+		a = util.angle_between_v(self.ship.direction, -self.ship.velocity)
+		if a < 0:
+			self.ship.turn_left(dt)
+		else:
+			self.ship.turn_right(dt)
+
+		if math.fabs(a) < 10:
+			self.ship.accelerate(dt)
+
 	def update(self, dt, entities):
 		if not SCREEN_RECT.colliderect(self.ship.bb):
-			self.head_for(Vector2(SCREEN_RECT.center))
+			self.head_for(dt, Vector2(SCREEN_RECT.center))
 		elif self.target != None:
 			if hasattr(self.target, "die"):
 				self.target = None
 			else:
-				a = self.head_for(self.target.position)		
+				a = self.head_for(dt, self.target.position)		
 				if math.fabs(a) < 10:
 					self.ship.fire()
 				
@@ -219,6 +239,7 @@ class AIShipController(object):
 				if dist > self.ship.sensor_range:
 					self.target = None
 		else:
+			self.stop(dt)
 			self.target = self.ship.last_detected
 
 class DummyTarget(object):
@@ -248,11 +269,13 @@ shipParams = {
 	"team" : "red",
 	"thrust" : 0.0001,
 	"max_speed" : 20,
-	"turn_speed" : 0.1*pi/180,
+	"turn_speed" : 0.5*pi/180,
 	"fire_rate" : 250,
 	"shield" : 100,
 	"attack_power" : 10,
-	"sensor_range" : 300,
+	"sensor_range" : 600,
+	"forcefield_radius" : 50,
+	"forcefield_strength" : 0.00001
 }
 
 entities = []
@@ -261,7 +284,7 @@ for i in range(10):
 	params["position"] = Vector2(random.randint(0, RESOLUTION[0]), random.randint(0, RESOLUTION[1]))
 	params["team"] = "red" if i % 2 == 0 else "blue"
 	ship = Ship(params, entities_to_add)
-	controller = AIShipController(ship)
+	controller = AIShipController(ship, 0.5)
 	entities.append(ship)
 	entities.append(controller)
 
@@ -280,10 +303,14 @@ while True:
 			entity.update(dt, entities)
 
 	for entity1 in entities:
-		if hasattr(entity1, "collides"):
-			for entity2 in entities:
-				if entity1 != entity2 and entity1.collides(entity2):
+		for entity2 in entities:
+			if entity1 != entity2:
+				if hasattr(entity1, "collides") and entity1.collides(entity2):
 					entity1.collided(entity2)
+				
+				if hasattr(entity1, "at_relative_position") and hasattr(entity2, "position"):
+					dist = (entity1.position - entity2.position).get_magnitude()
+					entity1.at_relative_position(entity2, dt)
 
 	entities.extend(entities_to_add)
 	del entities_to_add[:]
