@@ -5,6 +5,8 @@ from gameobjects.vector2 import Vector2
 from gameobjects.vector3 import Vector3
 from gameobjects.util import pi
 import math
+import copy
+import random
 
 import util
 
@@ -24,7 +26,7 @@ class Ship(object):
 		self.position = params["position"]
 		self.direction = params["direction"]
 		self.length = params["length"]
-		self.color = params["color"]
+		self.team = params["team"]
 		self.thrust = params["thrust"]
 		self.max_speed = params["max_speed"]
 		self.turn_speed = params["turn_speed"]
@@ -37,6 +39,11 @@ class Ship(object):
 		self.entities = entities
 		self.velocity = 0
 		self.last_detected = None
+
+		if self.team == "blue":
+			self.color = Vector3(0, 0, 255)
+		elif self.team == "red":
+			self.color = Vector3(255, 0, 0)
 
 	def accelerate(self, dt):
 		if self.velocity < self.max_speed:
@@ -77,7 +84,7 @@ class Ship(object):
 		self.last_detected = None
 		min_dist = 99999
 		for entity in entities:
-			if entity != self and type(entity) is Ship:
+			if entity != self and type(entity) is Ship and entity.team != self.team:
 				dist = (entity.position - self.position).get_magnitude()
 				if dist < self.sensor_range and dist < min_dist:
 					self.last_detected = entity
@@ -238,42 +245,25 @@ shipParams = {
 	"position" : Vector2(100, 100),
 	"direction" : Vector2(0, 1),
 	"length" : 10,
-	"color" : Vector3(255, 0, 0),
-	"thrust" : 0.0001,
-	"max_speed" : 10,
-	"turn_speed" : 0.1*pi/180,
-	"fire_rate" : 250,
-	"shield" : 100,
-	"attack_power" : 10,
-	"sensor_range" : 400,
-	"bb" : Rect(0, 0, 5, 10)
-}
-
-ship2Params = {
-	"position" : Vector2(800, 600),
-	"direction" : Vector2(-1, 0),
-	"length" : 10,
-	"color" : Vector3(0, 0, 255),
+	"team" : "red",
 	"thrust" : 0.0001,
 	"max_speed" : 20,
 	"turn_speed" : 0.1*pi/180,
 	"fire_rate" : 250,
 	"shield" : 100,
 	"attack_power" : 10,
-	"sensor_range" : 400,
-	"bb" : Rect(0, 0, 5, 10)
+	"sensor_range" : 300,
 }
 
-ship = Ship(shipParams, entities_to_add)
-ship2 = Ship(ship2Params, entities_to_add)
-controller = AIShipController(ship)
-controller2 = PlayerController(ship2) 
-
 entities = []
-entities.append(ship)
-entities.append(ship2)
-entities.append(controller)
-entities.append(controller2)
+for i in range(10):
+	params = copy.deepcopy(shipParams)
+	params["position"] = Vector2(random.randint(0, RESOLUTION[0]), random.randint(0, RESOLUTION[1]))
+	params["team"] = "red" if i % 2 == 0 else "blue"
+	ship = Ship(params, entities_to_add)
+	controller = AIShipController(ship)
+	entities.append(ship)
+	entities.append(controller)
 
 while True:
 	dt = clock.tick(50)
