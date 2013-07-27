@@ -14,7 +14,8 @@ RESOLUTION = (1024, 768)
 SCREEN_RECT = Rect((0,0), RESOLUTION)
 BULLET_INITIAL_VELOCITY = 1
 RENDER_BB = False 
-RENDER_FORCEFIELD = True
+RENDER_FORCEFIELD = False
+WORLD_RECT = Rect(-RESOLUTION[0]*4, -RESOLUTION[1]*4, RESOLUTION[0]*5, RESOLUTION[1]*5)
 
 window = pygame.display.set_mode(RESOLUTION)
 screen = pygame.display.get_surface()
@@ -65,7 +66,7 @@ class Ship(object):
 	def fire(self):
 		if self.last_fired > self.fire_rate:
 			v = BULLET_INITIAL_VELOCITY*self.direction
-			self.entities.append(Bullet(self.position.copy() + self.direction*30, v, 3, self.attack_power))
+			self.entities.append(Bullet(self.position.copy() + self.direction*30, v, 3, self.attack_power, 1000))
 			self.last_fired = 0
 
 	def collides(self, entity):
@@ -126,11 +127,12 @@ class Ship(object):
 			pygame.draw.circle(surface, (0, 0, 255), (px, py), self.forcefield_radius, 1) 
 
 class Bullet(object):
-	def __init__(self, position, velocity, radius, attack_power):
+	def __init__(self, position, velocity, radius, attack_power, ttl):
 		self.position = position
 		self.velocity = velocity
 		self.radius = radius
 		self.attack_power = attack_power
+		self.ttl = ttl
 		self.bb = Rect(0, 0, 2*radius, 2*radius)
 		self.bb.center = self.position
 
@@ -143,8 +145,9 @@ class Bullet(object):
 	def update(self, dt, entities):
 		self.position += dt*self.velocity
 		self.bb.center = self.position
-
-		if self.position.x < 0 or self.position.y < 0 or self.position.x > RESOLUTION[0] or self.position.y > RESOLUTION[1]:
+		self.ttl -= dt
+		
+		if self.ttl < 0:
 			self.die = True
 
 	def render(self, surface):
@@ -233,7 +236,7 @@ class AIShipController(object):
 			self.ship.accelerate(dt)
 
 	def update(self, dt, entities):
-		if not SCREEN_RECT.colliderect(self.ship.bb):
+		if not WORLD_RECT.colliderect(self.ship.bb):
 			self.head_for(dt, Vector2(SCREEN_RECT.center))
 		elif self.target != None:
 			if hasattr(self.target, "die"):
@@ -265,6 +268,42 @@ class MouseTarget(object):
 
 	def update(self, dt, entities):
 		self.position = pygame.mouse.get_pos()
+
+class Minimap(object):
+	def __init__(self, map_size, world_size):
+		self.map_size = map_size
+		self.world_size = world_size
+		self.entities = []
+
+	def project_position(self, position):
+		W = self.world_size.x
+		H = self.world_size.y
+		w = RESOLUTION[0]
+		h = RESOLUTION[1]
+		return self.map_size*(position + Vector2(W/2 - w/2,H/2 - h/2))/Vector2(W,H)
+
+	def update(self, dt, entities):
+		self.entities = entities
+
+	def render(self, surface):
+		w = int(self.map_size.x)
+		h = int(self.map_size.y)
+		minimap = pygame.Surface((w,h))
+		minimap.fill((0,0,0))
+		for entity in self.entities:
+			if isinstance(entity, Ship):
+				color = (255,0,0) if entity.team == "red" else (0,0,255)
+				ppos = self.project_position(entity.position)
+				px = int(ppos.x)
+				py = int(ppos.y)
+				pygame.draw.circle(minimap, color, (px, py), 2)
+			elif isinstance(entity, Bullet):
+				ppos = self.project_position(entity.position)
+				px = int(ppos.x)
+				py = int(ppos.y)
+				pygame.draw.circle(minimap, (255, 255, 0), (px, py), 1)
+
+		surface.blit(minimap, (0, RESOLUTION[1] - self.map_size.y))
 
 clock = pygame.time.Clock()
 
@@ -319,9 +358,9 @@ for i in range(10):
 	
 	if i % 2 == 0:
 		params["team"] = "red" 
-		params["graphic"] = pygame.image.load("/home/dementati/Downloads/fighter1.png")
-		params["graphic_direction"] = Vector2(0, -1)
-		params["graphic_scale"] = 0.1
+		params["graphic"] = pygame.image.load("/home/dementati/Downloads/smallship.png")
+		params["graphic_direction"] = Vector2(1, 0)
+		params["graphic_scale"] = 1
 	else:
 		params["team"] = "blue"
 		params["graphic"] = pygame.image.load("/home/dementati/Downloads/fighter2.png")
@@ -333,6 +372,7 @@ for i in range(10):
 	entities.append(ship)
 	entities.append(controller)
 
+entities.append(Minimap(Vector2(200, 200), Vector2(WORLD_RECT.width, WORLD_RECT.height)))
 
 while True:
 	dt = clock.tick(50)
