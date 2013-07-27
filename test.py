@@ -10,6 +10,7 @@ import util
 
 RESOLUTION = (1024, 768)
 BULLET_INITIAL_VELOCITY = 0.1
+RENDER_BB = False
 
 window = pygame.display.set_mode(RESOLUTION)
 screen = pygame.display.get_surface()
@@ -27,7 +28,9 @@ class Ship(object):
 		self.max_speed = params["max_speed"]
 		self.turn_speed = params["turn_speed"]
 		self.fire_rate = params["fire_rate"]
-		self.bb = params["bb"]
+		self.shield = params["shield"]
+		self.attack_power = params["attack_power"]
+		self.bb = Rect(0,0,0,0)
 		self.last_fired = 0
 		self.entities = entities
 		self.velocity = 0
@@ -49,7 +52,7 @@ class Ship(object):
 	def fire(self):
 		if self.last_fired > self.fire_rate:
 			v = self.velocity + BULLET_INITIAL_VELOCITY
-			self.entities.append(Bullet(self.position.copy() + self.direction*10, v*self.direction, 3))
+			self.entities.append(Bullet(self.position.copy() + self.direction*10, v*self.direction, 3, self.attack_power))
 			self.last_fired = 0
 
 	def collides(self, entity):
@@ -57,7 +60,7 @@ class Ship(object):
 
 	def collided(self, entity):
 		if type(entity) is Bullet:
-			self.die = True
+			self.shield -= entity.attack_power
 
 	def update_bb(self):
 		p1 = self.position - self.direction*self.length/2
@@ -70,6 +73,9 @@ class Ship(object):
 	def update(self, dt):
 		self.position += dt*self.direction*self.velocity
 		self.update_bb()
+
+		if self.shield < 0:
+			self.die = True
 		
 		if self.last_fired < 9999999:
 			self.last_fired += dt
@@ -78,13 +84,16 @@ class Ship(object):
 		p1 = self.position - self.direction*self.length/2
 		p2 = self.position + self.direction*self.length/2
 		pygame.draw.line(surface, self.color, p1.as_tuple(), p2.as_tuple(), 3)  
-		pygame.draw.rect(surface, (255, 255, 255), self.bb)
+
+		if RENDER_BB:
+			pygame.draw.rect(surface, (255, 255, 255), self.bb)
 
 class Bullet(object):
-	def __init__(self, position, velocity, radius):
+	def __init__(self, position, velocity, radius, attack_power):
 		self.position = position
 		self.velocity = velocity
 		self.radius = radius
+		self.attack_power = attack_power
 		self.bb = Rect(0, 0, 2*radius, 2*radius)
 		self.bb.center = self.position
 
@@ -105,7 +114,9 @@ class Bullet(object):
 		px = int(self.position.x)
 		py = int(self.position.y)
 		pygame.draw.circle(surface, (255, 255, 0), (px, py), self.radius) 
-		pygame.draw.rect(surface, (255, 255, 255), self.bb)
+
+		if RENDER_BB:
+			pygame.draw.rect(surface, (255, 255, 255), self.bb)
 
 class PlayerController(object):
 	def __init__(self, ship):
@@ -176,6 +187,8 @@ shipParams = {
 	"max_speed" : 10,
 	"turn_speed" : 0.1*pi/180,
 	"fire_rate" : 250,
+	"shield" : 100,
+	"attack_power" : 10,
 	"bb" : Rect(0, 0, 5, 10)
 }
 
@@ -188,6 +201,8 @@ ship2Params = {
 	"max_speed" : 20,
 	"turn_speed" : 0.1*pi/180,
 	"fire_rate" : 250,
+	"shield" : 100,
+	"attack_power" : 10,
 	"bb" : Rect(0, 0, 5, 10)
 }
 
