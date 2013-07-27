@@ -9,6 +9,7 @@ import math
 import util
 
 RESOLUTION = (1024, 768)
+SCREEN_RECT = Rect((0,0), RESOLUTION)
 BULLET_INITIAL_VELOCITY = 0.1
 RENDER_BB = False
 
@@ -30,10 +31,12 @@ class Ship(object):
 		self.fire_rate = params["fire_rate"]
 		self.shield = params["shield"]
 		self.attack_power = params["attack_power"]
+		self.sensor_range = params["sensor_range"]
 		self.bb = Rect(0,0,0,0)
 		self.last_fired = 0
 		self.entities = entities
 		self.velocity = 0
+		self.last_detected = None
 
 	def accelerate(self, dt):
 		if self.velocity < self.max_speed:
@@ -70,9 +73,22 @@ class Ship(object):
 		self.bb.topleft = tl
 		self.bb.size = (br[0] - tl[0], br[1] - tl[1])
 
-	def update(self, dt):
+	def detect_enemies(self, entities):
+		self.last_detected = None
+		min_dist = 99999
+		for entity in entities:
+			if entity != self and type(entity) is Ship:
+				dist = (entity.position - self.position).get_magnitude()
+				if dist < self.sensor_range and dist < min_dist:
+					self.last_detected = entity
+					min_dist = dist
+
+
+	def update(self, dt, entities):
 		self.position += dt*self.direction*self.velocity
 		self.update_bb()
+
+		self.detect_enemies(entities)
 
 		if self.shield < 0:
 			self.die = True
@@ -103,7 +119,7 @@ class Bullet(object):
 	def collided(self, entity):
 		self.die = True
 
-	def update(self, dt):
+	def update(self, dt, entities):
 		self.position += dt*self.velocity
 		self.bb.center = self.position
 
@@ -122,30 +138,9 @@ class PlayerController(object):
 	def __init__(self, ship):
 		self.ship = ship
 
-	def update(self, dt):
-		keystate = pygame.key.get_pressed()
-
-		if keystate[K_w]:
-			self.ship.accelerate(dt)
-		if keystate[K_s]:
-			self.ship.decelerate(dt)
-		if keystate[K_a]:
-			self.ship.turn_left(dt)
-		if keystate[K_d]:
-			self.ship.turn_right(dt)
-		if keystate[K_SPACE]:
-			self.ship.fire()
-
-class AIShipController(object):
-	def __init__(self, ship):
-		self.ship = ship
-
-	def set_target(self, target):
-		self.target = target
-
-	def update(self, dt):
+	def head_for(self, position):
 		# Change direction
-		s2t = self.target.position - self.ship.position
+		s2t = position - self.ship.position
 		a = util.angle_between_v(self.ship.direction, s2t)
 		if a < 0:
 			self.ship.turn_left(dt)
@@ -157,6 +152,67 @@ class AIShipController(object):
 			self.ship.accelerate(dt)	
 		elif math.fabs(a) > 20:
 			self.ship.decelerate(dt)
+
+		return a
+
+	def update(self, dt, entities):
+		if not SCREEN_RECT.colliderect(self.ship.bb):
+			self.head_for(Vector2(SCREEN_RECT.center))
+		else:
+			keystate = pygame.key.get_pressed()
+
+			if keystate[K_w]:
+				self.ship.accelerate(dt)
+			if keystate[K_s]:
+				self.ship.decelerate(dt)
+			if keystate[K_a]:
+				self.ship.turn_left(dt)
+			if keystate[K_d]:
+				self.ship.turn_right(dt)
+			if keystate[K_SPACE]:
+				self.ship.fire()
+
+class AIShipController(object):
+	def __init__(self, ship):
+		self.ship = ship
+		self.target = None
+
+	def set_target(self, target):
+		self.target = target
+
+	def head_for(self, position):
+		# Change direction
+		s2t = position - self.ship.position
+		a = util.angle_between_v(self.ship.direction, s2t)
+		if a < 0:
+			self.ship.turn_left(dt)
+		elif a > 0:
+			self.ship.turn_right(dt)
+
+		# Change speed
+		if math.fabs(a) < 10:
+			self.ship.accelerate(dt)	
+		elif math.fabs(a) > 20:
+			self.ship.decelerate(dt)
+
+		return a
+
+	def update(self, dt, entities):
+		if not SCREEN_RECT.colliderect(self.ship.bb):
+			self.head_for(Vector2(SCREEN_RECT.center))
+		elif self.target != None:
+			if hasattr(self.target, "die"):
+				self.target = None
+			else:
+				a = self.head_for(self.target.position)		
+				if math.fabs(a) < 10:
+					self.ship.fire()
+				
+				dist = (self.target.position - self.ship.position).get_magnitude()
+				if dist > self.ship.sensor_range:
+					self.target = None
+		else:
+			self.target = self.ship.last_detected
 
 class DummyTarget(object):
 	def __init__(self, position):
@@ -171,7 +227,7 @@ class MouseTarget(object):
 	def __init__(self):
 		self.position = Vector2()
 
-	def update(self, dt):
+	def update(self, dt, entities):
 		self.position = pygame.mouse.get_pos()
 
 clock = pygame.time.Clock()
@@ -189,6 +245,7 @@ shipParams = {
 	"fire_rate" : 250,
 	"shield" : 100,
 	"attack_power" : 10,
+	"sensor_range" : 400,
 	"bb" : Rect(0, 0, 5, 10)
 }
 
@@ -203,19 +260,19 @@ ship2Params = {
 	"fire_rate" : 250,
 	"shield" : 100,
 	"attack_power" : 10,
+	"sensor_range" : 400,
 	"bb" : Rect(0, 0, 5, 10)
 }
 
 ship = Ship(shipParams, entities_to_add)
 ship2 = Ship(ship2Params, entities_to_add)
-#controller = AIShipController(ship)
+controller = AIShipController(ship)
 controller2 = PlayerController(ship2) 
-#controller.set_target(ship2)
 
 entities = []
 entities.append(ship)
 entities.append(ship2)
-#entities.append(controller)
+entities.append(controller)
 entities.append(controller2)
 
 while True:
@@ -230,7 +287,7 @@ while True:
 
 	for entity in entities:
 		if hasattr(entity, "update"):
-			entity.update(dt)
+			entity.update(dt, entities)
 
 	for entity1 in entities:
 		if hasattr(entity1, "collides"):
