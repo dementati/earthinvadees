@@ -16,7 +16,6 @@ SCREEN_RESOLUTION = (1024, 768)
 SCREEN_RESOLUTION_V = Vector2(1024, 768)
 SCREEN_RECT = Rect((0,0), SCREEN_RESOLUTION)
 WORLD_RECT = Rect(0, 0, 5000, 5000)
-SPAWN_COST = 10
 
 window = pygame.display.set_mode(SCREEN_RESOLUTION)
 screen = pygame.display.get_surface()
@@ -50,14 +49,21 @@ fighterParams = {
 	"sensor_range" : 600,
 	"forcefield_radius" : 50,
 	"forcefield_strength" : 0.00001,
-	"weapon" : bullet
+	"weapon" : bullet,
+	"resource_cost" : 10,
+	"entities_to_add" : entities_to_add
 }
 
-spawn_params = copy.deepcopy(fighterParams)
-spawn_params["team"] = "red"
-spawn_params["graphic"] = pygame.image.load("/home/dementati/Downloads/smallship.png")
-spawn_params["graphic_direction"] = Vector2(1, 0)
-spawn_params["graphic_scale"] = 1
+ship_blueprint = copy.deepcopy(fighterParams)
+ship_blueprint["team"] = "red"
+ship_blueprint["graphic"] = pygame.image.load("/home/dementati/Downloads/smallship.png")
+ship_blueprint["graphic_direction"] = Vector2(1, 0)
+ship_blueprint["graphic_scale"] = 1
+
+pilot_params = {
+	"cruise_speed" : 0.5,
+	"world_rect" : WORLD_RECT
+}
 
 mothershipParams = {
 	"position" : Vector2(2500, 2500),
@@ -76,13 +82,13 @@ mothershipParams = {
 	"graphic" : pygame.image.load("/home/dementati/Downloads/mother.png"),
 	"graphic_direction" : Vector2(-1, 0),
 	"graphic_scale" : 0.5,
-	"spawn_params" : spawn_params,
 	"resources" : 100,
-	"weapon" : None
+	"weapon" : None,
+	"blueprints" : [(ship_blueprint, pilot_params)],
+	"resource_cost" : 9999
 }
 
 entities = []
-
 
 mothership = Mothership(mothershipParams, entities_to_add)
 
@@ -144,6 +150,10 @@ while True:
 
 	# Update
 	for event in pygame.event.get():
+		for entity in entities:
+			if hasattr(entity, "handle_event"):
+				entity.handle_event(event)
+
 		if event.type == QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):
 			sys.exit(0)
 

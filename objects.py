@@ -1,17 +1,22 @@
+
+import util
+import copy
+import random
+import math
+
 import pygame
 from pygame import Rect
 
 from gameobjects.vector2 import Vector2
 from gameobjects.vector3 import Vector3
 
-import util
-import copy
+from controllers import AIShipController
 
 RENDER_BB = False
 RENDER_FORCEFIELD = False
 
 class Ship(object):
-	def __init__(self, params, entities):
+	def __init__(self, params, entities_to_add):
 		self.position = params["position"]
 		self.direction = params["direction"]
 		self.length = params["length"]
@@ -31,9 +36,10 @@ class Ship(object):
 		self.weapon = params["weapon"]
 		self.bb = Rect(0,0,0,0)
 		self.last_fired = 0
-		self.entities = entities
+		self.entities_to_add = entities_to_add
 		self.velocity = Vector2()
 		self.last_detected = None
+		self.resource_cost = params["resource_cost"]
 
 		if self.team == "blue":
 			self.color = Vector3(0, 0, 255)
@@ -58,7 +64,7 @@ class Ship(object):
 			shot.set_direction(self.direction)
 			radius = max([self.graphic.get_width(), self.graphic.get_height()])*self.graphic_scale
 			shot.set_position(self.position + self.direction*(radius+10))
-			self.entities.append(shot)
+			self.entities_to_add.append(shot)
 			self.last_fired = 0
 
 	def collides(self, entity):
@@ -121,10 +127,10 @@ class Ship(object):
 
 
 class Mothership(Ship):
-	def __init__(self, params, entities):
+	def __init__(self, params, entities_to_add):
 		self.resources = params["resources"]
-		self.spawn_params = params["spawn_params"]
-		super(Mothership, self).__init__(params, entities)
+		self.blueprints = params["blueprints"]
+		super(Mothership, self).__init__(params, entities_to_add)
 
 	def move_left(self, dt):
 		self.velocity += Vector2(-1,0)*dt*self.thrust
@@ -138,13 +144,21 @@ class Mothership(Ship):
 	def move_down(self, dt):
 		self.velocity += Vector2(0,1)*dt*self.thrust
 
-	def spawn(self):
-		if self.resources > SPAWN_COST:
-			self.resources -= SPAWN_COST
-			params = copy.deepcopy(self.spawn_params)
-			a = 2*random.random()*pi
-			params["position"] = self.position + Vector2(math.cos(a)*100, math.sin(a)*100)
-			self.entities.append(Ship(params, self.entities))	
+	def spawn(self, index):
+		blueprint = self.blueprints[index][0]
+		if self.resources > blueprint["resource_cost"]:
+			self.resources -= blueprint["resource_cost"]
+
+			ship = Ship(blueprint, self.entities_to_add)
+			a = 2*random.random()*math.pi
+			ship.position = self.position + Vector2(math.cos(a)*400, math.sin(a)*400)
+
+			pilot_params = copy.copy(self.blueprints[index][1])
+			pilot_params["ship"] = ship
+			controller = AIShipController(pilot_params)
+
+			self.entities_to_add.append(ship)
+			self.entities_to_add.append(controller)
 
 class Bullet(object):
 	def __init__(self, params):

@@ -29,9 +29,13 @@ class MothershipPlayerController(object):
 
 		return a
 
+	def handle_event(self, event):
+		if event.type == KEYDOWN and event.key == K_1:
+			self.ship.spawn(0)
+
 	def update(self, dt, entities):
 		if not self.world_rect.colliderect(self.ship.bb):
-			self.head_for(Vector2(WORLD_RECT.center))
+			self.head_for(Vector2(self.world_rect.center))
 		else:
 			keystate = pygame.key.get_pressed()
 
