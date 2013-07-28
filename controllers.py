@@ -12,22 +12,18 @@ class MothershipPlayerController(object):
 		self.ship = params["ship"]
 		self.world_rect = params["world_rect"]
 
-	def head_for(self, position):
+	def head_for(self, dt, position):
 		# Change direction
 		s2t = position - self.ship.position
-		a = util.angle_between_v(self.ship.direction, s2t)
-		if a < 0:
-			self.ship.turn_left(dt)
-		elif a > 0:
-			self.ship.turn_right(dt)
-
-		# Change speed
-		if math.fabs(a) < 10:
-			self.ship.accelerate(dt)	
-		elif math.fabs(a) > 20:
-			self.ship.decelerate(dt)
-
-		return a
+		if s2t.x > 0:
+			self.ship.move_right(dt)
+		else:
+			self.ship.move_left(dt)
+		
+		if s2t.y > 0: 
+			self.ship.move_down(dt)
+		else:
+			self.ship.move_up(dt)
 
 	def handle_event(self, event):
 		if event.type == KEYDOWN and event.key == K_1:
@@ -35,7 +31,7 @@ class MothershipPlayerController(object):
 
 	def update(self, dt, entities):
 		if not self.world_rect.colliderect(self.ship.bb):
-			self.head_for(Vector2(self.world_rect.center))
+			self.head_for(dt, Vector2(self.world_rect.center))
 		else:
 			keystate = pygame.key.get_pressed()
 

@@ -57,9 +57,9 @@ fighterParams = {
 	"max_speed" : 20,
 	"turn_speed" : 0.1*math.pi/180,
 	"fire_rate" : 250,
-	"shield" : 1000,
+	"shield" : 10,
 	"attack_power" : 1,
-	"sensor_range" : 600,
+	"sensor_range" : 1000,
 	"forcefield_radius" : 50,
 	"forcefield_strength" : 0.00001,
 	"weapon" : bullet,
@@ -87,7 +87,7 @@ mothershipParams = {
 	"max_speed" : 5,
 	"turn_speed" : 0.01*math.pi/180,
 	"fire_rate" : 250,
-	"shield" : 10000,
+	"shield" : 1000,
 	"attack_power" : 10,
 	"sensor_range" : 600,
 	"forcefield_radius" : 200,
@@ -116,7 +116,7 @@ entities.append(mothership)
 entities.append(controller)
 
 for i in range(10):
-	params = copy.deepcopy(fighterParams)
+	params = copy.copy(fighterParams)
 	params["position"] = Vector2(random.randint(0, WORLD_RECT.width), random.randint(0, WORLD_RECT.height))
 	
 	params["team"] = "blue"
