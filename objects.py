@@ -130,6 +130,8 @@ class Mothership(Ship):
 	def __init__(self, params, entities_to_add):
 		self.resources = params["resources"]
 		self.blueprints = params["blueprints"]
+		self.resource_growth_rate = 1000
+		self.last_growth = 0
 		super(Mothership, self).__init__(params, entities_to_add)
 
 	def move_left(self, dt):
@@ -146,7 +148,7 @@ class Mothership(Ship):
 
 	def spawn(self, index):
 		blueprint = self.blueprints[index][0]
-		if self.resources > blueprint["resource_cost"]:
+		if self.resources >= blueprint["resource_cost"]:
 			self.resources -= blueprint["resource_cost"]
 
 			ship = Ship(blueprint, self.entities_to_add)
@@ -159,6 +161,14 @@ class Mothership(Ship):
 
 			self.entities_to_add.append(ship)
 			self.entities_to_add.append(controller)
+
+	def update(self, dt, entities):
+		super(Mothership, self).update(dt, entities)
+
+		self.last_growth += dt
+		if self.last_growth > self.resource_growth_rate:
+			self.resources += 1
+			self.last_growth = 0
 
 class Bullet(object):
 	def __init__(self, params):

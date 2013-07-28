@@ -17,6 +17,8 @@ SCREEN_RESOLUTION_V = Vector2(1024, 768)
 SCREEN_RECT = Rect((0,0), SCREEN_RESOLUTION)
 WORLD_RECT = Rect(0, 0, 5000, 5000)
 
+pygame.init()
+
 window = pygame.display.set_mode(SCREEN_RESOLUTION)
 screen = pygame.display.get_surface()
 
@@ -143,8 +145,11 @@ minimap_params = {
 }
 entities.append(Minimap(minimap_params))
 
+stats = PlayerStats(mothership)
+entities.append(stats)
+
 viewport_params = {
-	"position" : Vector2(100, 100),
+	"position" : Vector2(WORLD_RECT.width/2 - SCREEN_RESOLUTION[0]/2, WORLD_RECT.height/2 - SCREEN_RESOLUTION[1]/2),
 	"panning_speed" : 50,
 	"screen_resolution" : SCREEN_RESOLUTION_V,
 	"pan_border_width" : 100

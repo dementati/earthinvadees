@@ -45,6 +45,9 @@ class Minimap(object):
 				pygame.draw.rect(minimap, (255,255,255), Rect(ppost, psizet), 1) 
 
 		surface.blit(minimap, (0, self.screen_resolution.y - self.map_size.y))
+		r = minimap.get_rect()
+		r.topleft = (0, self.screen_resolution.y - self.map_size.y) 
+		pygame.draw.rect(surface, (0, 255, 0), r, 1)
 
 class Viewport:
 	def __init__(self, params):
@@ -68,4 +71,17 @@ class Viewport:
 		if mp[1] < self.pan_border_width:
 			self.position.y -= self.panning_speed
 
+class PlayerStats(object):
+	def __init__(self, mothership):
+		self.mothership = mothership
+		self.font = pygame.font.SysFont("Monospace", 20, bold=True)
 
+	def render(self, surface, viewport):
+		y = 0
+		text = "Shields: %d" % self.mothership.shield
+		label = self.font.render(text, 1, (255, 255, 255))
+		surface.blit(label, (0,y))
+		y += 20
+		text = "Resources: %d" % self.mothership.resources
+		label = self.font.render(text, 1, (255, 255, 255))
+		surface.blit(label, (0,y))
