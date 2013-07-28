@@ -125,5 +125,8 @@ class MissionSelector(object):
 			sp = viewport.world2screen_coordinates(self.mothership.mission)
 			pygame.draw.rect(surface, (255, 0, 255), Rect(int(sp.x) - 10, int(sp.y) - 10, 20, 20), 1)
 		elif isinstance(self.mothership.mission, Ship):
-			sr = viewport.world2screen_rect(self.mothership.mission.bb)
-			pygame.draw.rect(surface, (255, 0, 255), sr, 1)
+			if hasattr(self.mothership.mission, "die"):
+				self.mothership.mission = None
+			else:
+				sr = viewport.world2screen_rect(self.mothership.mission.bb)
+				pygame.draw.rect(surface, (255, 0, 255), sr, 1)

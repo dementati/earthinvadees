@@ -27,8 +27,11 @@ class AlienMothershipPlayerController(object):
 			self.ship.move_up(dt)
 
 	def handle_event(self, event):
-		if event.type == KEYDOWN and event.key == K_1:
-			self.ship.spawn(0)
+		if event.type == KEYDOWN:
+			if event.key == K_1:
+				self.ship.spawn(0)
+			elif event.key == K_2:
+				self.ship.spawn(1)
 
 	def update(self, dt, entities):
 		if not self.world_rect.colliderect(self.ship.bb):
@@ -44,6 +47,31 @@ class AlienMothershipPlayerController(object):
 				self.ship.move_left(dt)
 			if keystate[K_d]:
 				self.ship.move_right(dt)
+
+class TerranMothershipAIController(object):
+	def __init__(self, params):
+		self.ship = params["ship"]
+		self.world_rect = params["world_rect"]
+
+	def update(self, dt, entities):
+		fighter_count = 0
+		battlecruiser_count = 0
+		for entity in entities:
+			if isinstance(entity, Ship): 
+				if entity.name == "alien_mothership":
+					self.ship.mission = entity
+
+				if entity.name == "terran_fighter":
+					fighter_count += 1
+				elif entity.name == "terran_battlecruiser":
+					battlecruiser_count += 1
+
+		fighter_cost = self.ship.blueprints[0][0]["resource_cost"]
+		battlecruiser_cost = self.ship.blueprints[1][0]["resource_cost"]
+		if fighter_count*fighter_cost > battlecruiser_count*battlecruiser_cost and self.ship.resources >= battlecruiser_cost:
+			self.ship.spawn(1)
+		elif self.ship.resources >= fighter_cost:
+			self.ship.spawn(0)
 
 class FighterAIController(object):
 	def __init__(self, params):

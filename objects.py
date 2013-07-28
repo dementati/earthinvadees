@@ -10,7 +10,6 @@ from pygame import Rect
 from gameobjects.vector2 import Vector2
 from gameobjects.vector3 import Vector3
 
-
 RENDER_BB = False
 RENDER_FORCEFIELD = False
 
@@ -18,14 +17,11 @@ class Ship(object):
 	def __init__(self, params, entities_to_add):
 		self.position = params["position"]
 		self.direction = params["direction"]
-		self.length = params["length"]
 		self.team = params["team"]
 		self.thrust = params["thrust"]
 		self.max_speed = params["max_speed"]
 		self.turn_speed = params["turn_speed"]
-		self.fire_rate = params["fire_rate"]
 		self.shield = params["shield"]
-		self.attack_power = params["attack_power"]
 		self.sensor_range = params["sensor_range"]
 		self.forcefield_radius = params["forcefield_radius"]
 		self.forcefield_strength = params["forcefield_strength"]
@@ -39,6 +35,7 @@ class Ship(object):
 		self.velocity = Vector2()
 		self.last_detected = None
 		self.resource_cost = params["resource_cost"]
+		self.name = params["name"]
 
 		if self.team == "blue":
 			self.color = Vector3(0, 0, 255)
@@ -130,6 +127,7 @@ class TerranMothership(Ship):
 		self.blueprints = params["blueprints"]
 		self.resource_growth_rate = 1000
 		self.last_growth = 0
+		self.mission = None
 		super(TerranMothership, self).__init__(params, entities_to_add)
 
 	def spawn(self, index):
@@ -144,6 +142,18 @@ class TerranMothership(Ship):
 			pilot_params = copy.copy(self.blueprints[index][1])
 			pilot_params["ship"] = ship
 			controller = FighterAIController(pilot_params)
+			controller.set_mission(self.mission)
+
+			self.entities_to_add.append(ship)
+			self.entities_to_add.append(controller)
+
+	def update(self, dt, entities):
+		super(TerranMothership, self).update(dt, entities)
+
+		self.last_growth += dt
+		if self.last_growth > self.resource_growth_rate:
+			self.resources += 1
+			self.last_growth = 0
 
 class AlienMothership(Ship):
 	def __init__(self, params, entities_to_add):
@@ -202,6 +212,7 @@ class Bullet(object):
 		self.fire_rate = params["fire_rate"]
 		self.bb = Rect(0, 0, 2*self.radius, 2*self.radius)
 		self.bb.center = self.position
+		self.color = params["color"]
 
 	def set_position(self, position):
 		self.position = position
@@ -228,7 +239,7 @@ class Bullet(object):
 		pos = viewport.world2screen_coordinates(self.position)
 		px = int(pos.x)
 		py = int(pos.y)
-		pygame.draw.circle(surface, (255, 255, 0), (px, py), self.radius) 
+		pygame.draw.circle(surface, self.color, (px, py), self.radius) 
 
 		if RENDER_BB:
 			pygame.draw.rect(surface, (255, 255, 255), self.bb)
