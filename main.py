@@ -152,7 +152,8 @@ viewport_params = {
 	"position" : Vector2(WORLD_RECT.width/2 - SCREEN_RESOLUTION[0]/2, WORLD_RECT.height/2 - SCREEN_RESOLUTION[1]/2),
 	"panning_speed" : 50,
 	"screen_resolution" : SCREEN_RESOLUTION_V,
-	"pan_border_width" : 100
+	"pan_border_width" : 100,
+	"world_rect" : WORLD_RECT
 }
 viewport = Viewport(viewport_params)
 entities.append(viewport)

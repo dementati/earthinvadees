@@ -55,6 +55,7 @@ class Viewport:
 		self.panning_speed = params["panning_speed"]
 		self.screen_resolution = params["screen_resolution"]
 		self.pan_border_width = params["pan_border_width"]
+		self.world_rect = params["world_rect"]
 
 	def get_coordinates(self, position):
 		return position - self.position
@@ -62,13 +63,13 @@ class Viewport:
 	def update(self, dt, entities):
 		mp = pygame.mouse.get_pos()
 
-		if mp[0] > self.screen_resolution.x - self.pan_border_width:
+		if mp[0] > self.screen_resolution.x - self.pan_border_width and self.position.x < self.world_rect.width - self.screen_resolution.x:
 			self.position.x += self.panning_speed
-		if mp[0] < self.pan_border_width:
+		if mp[0] < self.pan_border_width and self.position.x > 0:
 			self.position.x -= self.panning_speed 
-		if mp[1] > self.screen_resolution.y - self.pan_border_width:
+		if mp[1] > self.screen_resolution.y - self.pan_border_width and self.position.y < self.world_rect.height - self.screen_resolution.y:
 			self.position.y += self.panning_speed
-		if mp[1] < self.pan_border_width:
+		if mp[1] < self.pan_border_width and self.position.y > 0:
 			self.position.y -= self.panning_speed
 
 class PlayerStats(object):
