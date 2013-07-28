@@ -6,8 +6,9 @@ from pygame.locals import *
 from gameobjects.vector2 import Vector2
 
 import util
+from objects import Ship
 
-class MothershipPlayerController(object):
+class AlienMothershipPlayerController(object):
 	def __init__(self, params):
 		self.ship = params["ship"]
 		self.world_rect = params["world_rect"]
@@ -44,34 +45,69 @@ class MothershipPlayerController(object):
 			if keystate[K_d]:
 				self.ship.move_right(dt)
 
-class AIShipController(object):
+class FighterAIController(object):
 	def __init__(self, params):
 		self.ship = params["ship"]
 		self.target = None
 		self.cruise_speed = params["cruise_speed"]
 		self.world_rect = params["world_rect"]
+		self.mission = None
+
+	def set_mission(self, mission):
+		self.mission = mission
 
 	def set_target(self, target):
 		self.target = target
 
-	def head_for(self, dt, position):
-		# Change direction
-		s2t = position - self.ship.position
-		a = util.angle_between_v(self.ship.direction, s2t)
+	def align_to(self, dt, v):
+		a = util.angle_between_v(self.ship.direction, v)
 		if a < 0:
 			self.ship.turn_left(dt)
-		elif a > 0:
+		else:
 			self.ship.turn_right(dt)
 
-		# Change speed
-		if math.fabs(a) < 10:
-			v = util.project_v(self.ship.velocity, self.ship.direction)
-			if v.get_magnitude() < self.cruise_speed:
-				self.ship.accelerate(dt)	
-			else:
-				self.ship.decelerate(dt)
-
 		return a
+
+	def head_for(self, dt, position):
+		s2t = position - self.ship.position
+		v = util.project_v(self.ship.velocity, s2t)
+
+		ratio = 0
+		if self.ship.velocity.get_magnitude() > 0:
+			v2 = util.project_v(v, self.ship.velocity)
+			ratio = v.get_magnitude()/self.ship.velocity.get_magnitude()
+
+		ret_a = 180
+		if ratio > 0.99 or self.ship.velocity.get_magnitude() < 0.01:
+			a = 180
+			if s2t.get_magnitude() > (1.0/self.cruise_speed)*v.get_magnitude():
+				a = self.align_to(dt, s2t)
+				ret_a = a
+			else:
+				a = self.align_to(dt, -s2t)
+	
+			if math.fabs(a) < 10:
+				self.ship.accelerate(dt)
+		else:
+			self.stop(dt)
+
+		return ret_a
+
+	def attack(self, dt, target):
+		s2t = target.position - self.ship.position
+
+		a = self.align_to(dt, s2t)
+		if math.fabs(a) < 10:
+			if s2t.get_magnitude() < 2000:
+				self.ship.fire()
+
+				v = util.project_v(self.ship.velocity, s2t)
+				if (v+s2t).get_magnitude() > max([v.get_magnitude(), s2t.get_magnitude()]):
+					self.ship.decelerate(dt)
+				else:
+					self.ship.accelerate(dt)
+			else:
+				self.ship.accelerate(dt)
 
 	def stop(self, dt):
 		a = util.angle_between_v(self.ship.direction, -self.ship.velocity)
@@ -86,13 +122,25 @@ class AIShipController(object):
 	def update(self, dt, entities):
 		if not self.world_rect.colliderect(self.ship.bb):
 			self.head_for(dt, Vector2(self.world_rect.center))
-		elif self.target != None:
+		elif type(self.mission) == Vector2 or isinstance(self.mission, Ship):
+			if type(self.mission) == Vector2:
+				self.head_for(dt, self.mission)
+
+				dist = (self.mission - self.ship.position).get_magnitude()
+				if dist < 100:
+					self.mission = None
+
+			else:
+				if hasattr(self.mission, "die"):
+					self.mission = None
+				else:
+					self.attack(dt, self.mission)
+
+		elif isinstance(self.target, Ship):
 			if hasattr(self.target, "die"):
 				self.target = None
 			else:
-				a = self.head_for(dt, self.target.position)		
-				if math.fabs(a) < 10:
-					self.ship.fire()
+				self.attack(dt, self.target)
 				
 				dist = (self.target.position - self.ship.position).get_magnitude()
 				if dist > self.ship.sensor_range:
@@ -100,5 +148,6 @@ class AIShipController(object):
 		else:
 			self.stop(dt)
 			self.target = self.ship.last_detected
+
 
 

@@ -1,7 +1,8 @@
 import pygame
 from pygame import Rect
+from pygame.locals import *
 
-from objects import Ship, Mothership, Bullet
+from objects import *
 
 class Minimap(object):
 	def __init__(self, params):
@@ -24,8 +25,8 @@ class Minimap(object):
 		for entity in self.entities:
 			if isinstance(entity, Ship):
 				width = 1
-				if isinstance(entity, Mothership):
-					width = 3
+				if isinstance(entity, AlienMothership) or isinstance(entity, TerranMothership):
+					width = 5
 
 				color = (255,0,0) if entity.team == "red" else (0,0,255)
 				ppos = self.project_position(entity.position)
@@ -57,8 +58,17 @@ class Viewport:
 		self.pan_border_width = params["pan_border_width"]
 		self.world_rect = params["world_rect"]
 
-	def get_coordinates(self, position):
+	def world2screen_coordinates(self, position):
 		return position - self.position
+
+	def world2screen_rect(self, rect):
+		tl = Vector2(rect.topleft)
+		wc = self.world2screen_coordinates(tl)
+		wct = util.v2i_tuple(wc)
+		return Rect(wct, rect.size)
+
+	def screen2world_coordinates(self, position):
+		return position + self.position
 
 	def update(self, dt, entities):
 		mp = pygame.mouse.get_pos()
@@ -86,3 +96,34 @@ class PlayerStats(object):
 		text = "Resources: %d" % self.mothership.resources
 		label = self.font.render(text, 1, (255, 255, 255))
 		surface.blit(label, (0,y))
+
+class MissionSelector(object):
+	def __init__(self, viewport, mothership):
+		self.viewport = viewport
+		self.entities = []
+		self.mothership = mothership
+
+	def handle_event(self, event):	
+		if event.type == MOUSEBUTTONDOWN:
+			mp = Vector2(pygame.mouse.get_pos())	
+			wp = self.viewport.screen2world_coordinates(mp)
+
+			iwp = util.v2i_tuple(wp)
+			for entity in self.entities:
+				if isinstance(entity, TerranMothership):
+					if entity.bb.collidepoint(iwp):
+						self.mothership.mission = entity
+						return
+
+			self.mothership.mission = wp
+
+	def update(self, dt, entities):
+		self.entities = entities
+
+	def render(self, surface, viewport):
+		if type(self.mothership.mission) == Vector2:
+			sp = viewport.world2screen_coordinates(self.mothership.mission)
+			pygame.draw.rect(surface, (255, 0, 255), Rect(int(sp.x) - 10, int(sp.y) - 10, 20, 20), 1)
+		elif isinstance(self.mothership.mission, Ship):
+			sr = viewport.world2screen_rect(self.mothership.mission.bb)
+			pygame.draw.rect(surface, (255, 0, 255), sr, 1)

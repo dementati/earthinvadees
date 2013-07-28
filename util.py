@@ -19,3 +19,6 @@ def angle_between_v(v1, v2):
 
 def project_v(u,v):
 	return v*dot_v(u,v)/v.get_magnitude()**2
+
+def v2i_tuple(v):
+	return (int(v.x), int(v.y))

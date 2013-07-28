@@ -10,7 +10,6 @@ from pygame import Rect
 from gameobjects.vector2 import Vector2
 from gameobjects.vector3 import Vector3
 
-from controllers import AIShipController
 
 RENDER_BB = False
 RENDER_FORCEFIELD = False
@@ -112,7 +111,7 @@ class Ship(object):
 	def render(self, surface, viewport):
 		a = util.angle_between_v(self.direction, self.graphic_direction)
 		img = pygame.transform.rotozoom(self.graphic, a, self.graphic_scale)
-		pos = viewport.get_coordinates(self.position)
+		pos = viewport.world2screen_coordinates(self.position)
 		px = pos.x - img.get_width()/2
 		py = pos.y - img.get_height()/2
 		surface.blit(img, (px, py))
@@ -125,14 +124,35 @@ class Ship(object):
 			py = int(self.position.y)
 			pygame.draw.circle(surface, (0, 0, 255), (px, py), self.forcefield_radius, 1) 
 
-
-class Mothership(Ship):
+class TerranMothership(Ship):
 	def __init__(self, params, entities_to_add):
 		self.resources = params["resources"]
 		self.blueprints = params["blueprints"]
 		self.resource_growth_rate = 1000
 		self.last_growth = 0
-		super(Mothership, self).__init__(params, entities_to_add)
+		super(TerranMothership, self).__init__(params, entities_to_add)
+
+	def spawn(self, index):
+		blueprint = self.blueprints[index][0]
+		if self.resources >= blueprint["resource_cost"]:
+			self.resources -= blueprint["resource_cost"]
+
+			ship = Ship(blueprint, self.entities_to_add)
+			a = 2*random.random()*math.pi
+			ship.position = self.position + Vector2(math.cos(a)*400, math.sin(a)*400)
+
+			pilot_params = copy.copy(self.blueprints[index][1])
+			pilot_params["ship"] = ship
+			controller = FighterAIController(pilot_params)
+
+class AlienMothership(Ship):
+	def __init__(self, params, entities_to_add):
+		self.resources = params["resources"]
+		self.blueprints = params["blueprints"]
+		self.resource_growth_rate = 1000
+		self.last_growth = 0
+		self.mission = None
+		super(AlienMothership, self).__init__(params, entities_to_add)
 
 	def move_left(self, dt):
 		self.velocity += Vector2(-1,0)*dt*self.thrust
@@ -157,13 +177,14 @@ class Mothership(Ship):
 
 			pilot_params = copy.copy(self.blueprints[index][1])
 			pilot_params["ship"] = ship
-			controller = AIShipController(pilot_params)
+			controller = FighterAIController(pilot_params)
+			controller.set_mission(self.mission)
 
 			self.entities_to_add.append(ship)
 			self.entities_to_add.append(controller)
 
 	def update(self, dt, entities):
-		super(Mothership, self).update(dt, entities)
+		super(AlienMothership, self).update(dt, entities)
 
 		self.last_growth += dt
 		if self.last_growth > self.resource_growth_rate:
@@ -204,7 +225,7 @@ class Bullet(object):
 			self.die = True
 
 	def render(self, surface, viewport):
-		pos = viewport.get_coordinates(self.position)
+		pos = viewport.world2screen_coordinates(self.position)
 		px = int(pos.x)
 		py = int(pos.y)
 		pygame.draw.circle(surface, (255, 255, 0), (px, py), self.radius) 
@@ -213,3 +234,4 @@ class Bullet(object):
 			pygame.draw.rect(surface, (255, 255, 255), self.bb)
 
 
+from controllers import FighterAIController
