@@ -20,7 +20,20 @@ WORLD_RECT = Rect(0, 0, 5000, 5000)
 window = pygame.display.set_mode(SCREEN_RESOLUTION)
 screen = pygame.display.get_surface()
 
-background = pygame.image.load("/home/dementati/Downloads/bg1024x768.png")
+graphics = {
+	"background" : pygame.image.load("/home/dementati/Downloads/bg1024x768.png"),
+	"alien_fighter" : pygame.image.load("/home/dementati/Downloads/smallship.png"),
+	"alien_mothership" : pygame.image.load("/home/dementati/Downloads/mother.png"),
+	"human_fighter" : pygame.image.load("/home/dementati/Downloads/fighter1.png"),
+	"human_mothership" : pygame.image.load("/home/dementati/Downloads/mothership.png")
+}
+
+graphics_direction = {
+	"alien_fighter" : Vector2(1,0),
+	"alien_mothership" : Vector2(0,-1),
+	"human_fighter" : Vector2(0,-1),
+	"human_mothership" : Vector2(-1,0)
+}
 
 clock = pygame.time.Clock()
 
@@ -54,10 +67,10 @@ fighterParams = {
 	"entities_to_add" : entities_to_add
 }
 
-ship_blueprint = copy.deepcopy(fighterParams)
+ship_blueprint = copy.copy(fighterParams)
 ship_blueprint["team"] = "red"
-ship_blueprint["graphic"] = pygame.image.load("/home/dementati/Downloads/smallship.png")
-ship_blueprint["graphic_direction"] = Vector2(1, 0)
+ship_blueprint["graphic"] = graphics["alien_fighter"]
+ship_blueprint["graphic_direction"] = graphics_direction["alien_fighter"]
 ship_blueprint["graphic_scale"] = 1
 
 pilot_params = {
@@ -79,8 +92,8 @@ mothershipParams = {
 	"sensor_range" : 600,
 	"forcefield_radius" : 200,
 	"forcefield_strength" : 0.00001,		
-	"graphic" : pygame.image.load("/home/dementati/Downloads/mother.png"),
-	"graphic_direction" : Vector2(-1, 0),
+	"graphic" : graphics["alien_mothership"],
+	"graphic_direction" : graphics_direction["alien_mothership"],
 	"graphic_scale" : 0.5,
 	"resources" : 100,
 	"weapon" : None,
@@ -102,20 +115,14 @@ controller = MothershipPlayerController(mothership_controller_params)
 entities.append(mothership)
 entities.append(controller)
 
-for i in range(20):
+for i in range(10):
 	params = copy.deepcopy(fighterParams)
 	params["position"] = Vector2(random.randint(0, WORLD_RECT.width), random.randint(0, WORLD_RECT.height))
 	
-	if i % 2 == 0:
-		params["team"] = "red" 
-		params["graphic"] = pygame.image.load("/home/dementati/Downloads/smallship.png")
-		params["graphic_direction"] = Vector2(1, 0)
-		params["graphic_scale"] = 1
-	else:
-		params["team"] = "blue"
-		params["graphic"] = pygame.image.load("/home/dementati/Downloads/fighter2.png")
-		params["graphic_direction"] = Vector2(0, 1)
-		params["graphic_scale"] = 0.1
+	params["team"] = "blue"
+	params["graphic"] = graphics["human_fighter"]
+	params["graphic_direction"] = graphics_direction["human_fighter"]
+	params["graphic_scale"] = 0.1
 
 	ship = Ship(params, entities_to_add)
 
@@ -177,7 +184,7 @@ while True:
 	entities = [e for e in entities if not hasattr(e, 'die')]
 
 	# Render
-	screen.blit(background, (0, 0))
+	screen.blit(graphics["background"], (0, 0))
 	for entity in entities:
 		if hasattr(entity, "render"):
 			entity.render(screen, viewport)
