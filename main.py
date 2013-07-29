@@ -25,7 +25,6 @@ pygame.mixer.pre_init(44100, -16, 2, 2048)
 pygame.init()
 flags = FULLSCREEN | DOUBLEBUF
 window = pygame.display.set_mode(SCREEN_RESOLUTION, flags)
-window.set_alpha(None)
 pygame.event.set_allowed([QUIT, KEYDOWN, MOUSEBUTTONDOWN])
 screen = pygame.display.get_surface()
 clock = pygame.time.Clock()
@@ -34,15 +33,15 @@ entities = []
 
 # Sprites
 graphics = {
-	"background" : pygame.image.load("content/bg1024x768.png"),
-	"alien_fighter" : pygame.image.load("content/smallship.png"),
-	"alien_battlecruiser" : pygame.image.load("content/aliencruiser.png"),
-	"alien_battleship" : pygame.image.load("content/alienbattleship.png"),
-	"alien_mothership" : pygame.image.load("content/mother.png"),
-	"terran_fighter" : pygame.image.load("content/humansmallship.png"),
-	"terran_battlecruiser" : pygame.image.load("content/terrancruiser.png"),
-	"terran_battleship" : pygame.image.load("content/terranbattleship.png"),
-	"terran_mothership" : pygame.image.load("content/terranmother.png")
+	"background" : pygame.image.load("content/bg1024x768.png").convert_alpha(),
+	"alien_fighter" : pygame.image.load("content/smallship.png").convert_alpha(),
+	"alien_battlecruiser" : pygame.image.load("content/aliencruiser.png").convert_alpha(),
+	"alien_battleship" : pygame.image.load("content/alienbattleship.png").convert_alpha(),
+	"alien_mothership" : pygame.image.load("content/mother.png").convert_alpha(),
+	"terran_fighter" : pygame.image.load("content/humansmallship.png").convert_alpha(),
+	"terran_battlecruiser" : pygame.image.load("content/terrancruiser.png").convert_alpha(),
+	"terran_battleship" : pygame.image.load("content/terranbattleship.png").convert_alpha(),
+	"terran_mothership" : pygame.image.load("content/terranmother.png").convert_alpha()
 }
 
 graphics_direction = {
