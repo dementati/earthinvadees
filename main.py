@@ -51,6 +51,10 @@ graphics_direction = {
 	"terran_mothership" : Vector2(-1,0)
 }
 
+# Music
+pygame.mixer.music.load("/home/dementati/Downloads/DST-2ndBallad.mp3")
+pygame.mixer.music.play(-1)
+
 # Weapons
 light_blast_params = {
 	"radius" : 2,
