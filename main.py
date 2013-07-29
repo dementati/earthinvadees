@@ -61,7 +61,7 @@ viewport_params = {
 	"position" : Vector2(1000 - SCREEN_RESOLUTION[0]/2, 1000 - SCREEN_RESOLUTION[1]/2),
 	"panning_speed" : 50,
 	"screen_resolution" : SCREEN_RESOLUTION_V,
-	"pan_border_width" : 70,
+	"pan_border_width" : 10,
 	"world_rect" : WORLD_RECT
 }
 viewport = Viewport(viewport_params)
@@ -315,23 +315,24 @@ terran_mothership_controller = TerranMothershipAIController(terran_mothership_co
 entities.append(terran_mothership)
 entities.append(terran_mothership_controller)
 
-# Minimap
-minimap_params = {
-	"map_size" : Vector2(200, 200),
-	"world_size" : Vector2(WORLD_RECT.width, WORLD_RECT.height),
-	"screen_resolution" : SCREEN_RESOLUTION_V
-}
-entities.append(Minimap(minimap_params))
-
 # Player stats
 stats = PlayerStats(alien_mothership)
 entities.append(stats)
 
-
-
 # MissionSelector
 ms = MissionSelector(viewport, alien_mothership)
 entities.append(ms)
+
+# Minimap
+minimap_params = {
+	"map_size" : Vector2(200, 200),
+	"world_size" : Vector2(WORLD_RECT.width, WORLD_RECT.height),
+	"screen_resolution" : SCREEN_RESOLUTION_V,
+	"viewport" : viewport
+}
+entities.append(Minimap(minimap_params))
+
+
 
 # Spawn bar
 sb = SpawnBar(alien_mothership)
@@ -356,6 +357,7 @@ while True:
 		for entity in entities:
 			if hasattr(entity, "handle_event"):
 				entity.handle_event(event)
+				continue
 
 		if event.type == QUIT or (event.type == KEYDOWN and event.key == K_ESCAPE):
 			sys.exit(0)

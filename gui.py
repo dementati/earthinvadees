@@ -9,11 +9,27 @@ class Minimap(object):
 		self.map_size = params["map_size"]
 		self.world_size = params["world_size"]
 		self.screen_resolution = params["screen_resolution"]
+		self.viewport = params["viewport"]
 		self.entities = []
 		self.gui = True
 
 	def project_position(self, position):
 		return position*self.map_size/self.world_size
+
+	def inv_project_position(self, position):
+		return position * self.world_size/self.map_size
+
+	def handle_event(self, event):
+		if event.type == MOUSEBUTTONDOWN:
+			mp = pygame.mouse.get_pos()
+			rect = Rect((0, self.screen_resolution.y - self.map_size.y), util.v2i_tuple(self.map_size))
+
+			if rect.collidepoint(mp):
+				vmp = Vector2(mp)
+				vmp -= Vector2(0, self.screen_resolution.y - self.map_size.y)
+				wp = self.inv_project_position(vmp)
+				self.viewport.position = wp - self.screen_resolution/2
+
 
 	def update(self, dt, entities):
 		self.entities = entities
