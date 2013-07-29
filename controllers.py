@@ -54,8 +54,75 @@ class TerranMothershipAIController(object):
 	def __init__(self, params):
 		self.ship = params["ship"]
 		self.world_rect = params["world_rect"]
+		self.cruise_speed = params["cruise_speed"]
+
+	def align_to(self, dt, v):
+		a = util.angle_between_v(self.ship.direction, v)
+		if a < 0:
+			self.ship.turn_left(dt)
+		else:
+			self.ship.turn_right(dt)
+
+		return a
+
+	def stop(self, dt):
+		a = util.angle_between_v(self.ship.direction, self.ship.velocity)
+		ma = util.angle_between_v(self.ship.direction, -self.ship.velocity)
+		aa = math.fabs(a)
+		ama = math.fabs(ma)
+
+		if aa < ama:
+			self.align_to(dt, self.ship.velocity)
+	
+			if a < 0:
+				self.ship.turn_left(dt)
+			else:
+				self.ship.turn_right(dt)
+
+			if aa < 10:
+				self.ship.decelerate(dt)
+		else:
+			self.align_to(dt, -self.ship.velocity)
+		
+			if ma < 0:
+				self.ship.turn_left(dt)
+			else:
+				self.ship.turn_right(dt)
+
+			if ama < 10:
+				self.ship.accelerate(dt)
+
+	def head_for(self, dt, position):
+		s2t = position - self.ship.position
+		v = util.project_v(self.ship.velocity, s2t)
+
+		ratio = 0
+		if self.ship.velocity.get_magnitude() > 0:
+			v2 = util.project_v(v, self.ship.velocity)
+			ratio = v.get_magnitude()/self.ship.velocity.get_magnitude()
+
+		ret_a = 180
+		if ratio > 0.99 or self.ship.velocity.get_magnitude() < 0.01:
+			a = 180
+			if s2t.get_magnitude() > (1.0/self.cruise_speed)*v.get_magnitude():
+				a = self.align_to(dt, s2t)
+				ret_a = a
+			else:
+				a = self.align_to(dt, -s2t)
+	
+			if math.fabs(a) < 10:
+				self.ship.accelerate(dt)
+		else:
+			self.stop(dt)
+
+		return ret_a
 
 	def update(self, dt, entities):
+		if not self.world_rect.colliderect(self.ship.bb):
+			self.head_for(dt, Vector2(self.world_rect.center))
+		else:
+			self.stop(dt)
+
 		fc = 0
 		bcc = 0
 		bsc = 0

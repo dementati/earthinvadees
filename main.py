@@ -303,6 +303,7 @@ terran_mothership = TerranMothership(terran_mothership_params, entities_to_add)
 
 terran_mothership_controller_params = {
 	"ship" : terran_mothership,
+	"cruise_speed" : 0.5,
 	"world_rect" : WORLD_RECT
 }
 terran_mothership_controller = TerranMothershipAIController(terran_mothership_controller_params)
@@ -338,7 +339,7 @@ entities.append(ss)
 
 # Main game loop
 win = True
-run = False
+run = True
 while True:
 	dt = clock.tick(50)
 
