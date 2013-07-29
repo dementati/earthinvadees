@@ -20,6 +20,7 @@ SCREEN_RECT = Rect((0,0), SCREEN_RESOLUTION)
 WORLD_RECT = Rect(0, 0, 5000, 5000)
 
 # General initialization
+pygame.mixer.pre_init(44100, -16, 2, 2048)
 pygame.init()
 window = pygame.display.set_mode(SCREEN_RESOLUTION)
 screen = pygame.display.get_surface()
@@ -29,15 +30,15 @@ entities = []
 
 # Sprites
 graphics = {
-	"background" : pygame.image.load("/home/dementati/Downloads/bg1024x768.png"),
-	"alien_fighter" : pygame.image.load("/home/dementati/Downloads/smallship.png"),
-	"alien_battlecruiser" : pygame.image.load("/home/dementati/Downloads/aliencruiser.png"),
-	"alien_battleship" : pygame.image.load("/home/dementati/Downloads/alienbattleship.png"),
-	"alien_mothership" : pygame.image.load("/home/dementati/Downloads/mother.png"),
-	"terran_fighter" : pygame.image.load("/home/dementati/Downloads/humansmallship.png"),
-	"terran_battlecruiser" : pygame.image.load("/home/dementati/Downloads/terrancruiser.png"),
-	"terran_battleship" : pygame.image.load("/home/dementati/Downloads/terranbattleship.png"),
-	"terran_mothership" : pygame.image.load("/home/dementati/Downloads/mothership.png")
+	"background" : pygame.image.load("content/bg1024x768.png"),
+	"alien_fighter" : pygame.image.load("content/smallship.png"),
+	"alien_battlecruiser" : pygame.image.load("content/aliencruiser.png"),
+	"alien_battleship" : pygame.image.load("content/alienbattleship.png"),
+	"alien_mothership" : pygame.image.load("content/mother.png"),
+	"terran_fighter" : pygame.image.load("content/humansmallship.png"),
+	"terran_battlecruiser" : pygame.image.load("content/terrancruiser.png"),
+	"terran_battleship" : pygame.image.load("content/terranbattleship.png"),
+	"terran_mothership" : pygame.image.load("content/terranmother.png")
 }
 
 graphics_direction = {
@@ -48,11 +49,33 @@ graphics_direction = {
 	"terran_fighter" : Vector2(-1,0),
 	"terran_battlecruiser" : Vector2(-1,0),
 	"terran_battleship" : Vector2(1,0),
-	"terran_mothership" : Vector2(-1,0)
+	"terran_mothership" : Vector2(1,0)
 }
 
-# Music
-pygame.mixer.music.load("/home/dementati/Downloads/DST-2ndBallad.mp3")
+# Viewport
+viewport_params = {
+	"position" : Vector2(1000 - SCREEN_RESOLUTION[0]/2, 1000 - SCREEN_RESOLUTION[1]/2),
+	"panning_speed" : 50,
+	"screen_resolution" : SCREEN_RESOLUTION_V,
+	"pan_border_width" : 70,
+	"world_rect" : WORLD_RECT
+}
+viewport = Viewport(viewport_params)
+entities.append(viewport)
+
+# Sound and music
+sound_effects = {
+	"light_blast" : pygame.mixer.Sound("content/light_blast.wav"),		
+	"medium_blast" : pygame.mixer.Sound("content/medium_blast.wav"),		
+	"heavy_blast" : pygame.mixer.Sound("content/heavy_blast.wav"),	
+	"spawn" : pygame.mixer.Sound("content/spawn.wav"),
+	"blast_hit" : pygame.mixer.Sound("content/blast_hit.wav"),
+	"destroyed" : pygame.mixer.Sound("content/destroyed.wav")
+}
+
+sound_player = SoundPlayer(sound_effects, viewport)
+
+pygame.mixer.music.load("content/background.mp3")
 pygame.mixer.music.play(-1)
 
 # Weapons
@@ -62,7 +85,10 @@ light_blast_params = {
 	"ttl" : 1000,
 	"initial_speed" : 1,
 	"fire_rate" : 250,
-	"color" : (255,255,0)
+	"color" : (255,255,0),
+	"fire_sound" : "light_blast",
+	"hit_sound" : "blast_hit",
+	"sound_player" : sound_player
 }
 light_blast = Bullet(light_blast_params)
 
@@ -72,7 +98,10 @@ medium_blast_params = {
 	"ttl" : 5000,
 	"initial_speed" : 2,
 	"fire_rate" : 500,
-	"color" : (255,0,255)
+	"color" : (255,0,255),
+	"fire_sound" : "medium_blast",
+	"hit_sound" : "blast_hit",
+	"sound_player" : sound_player
 }
 medium_blast = Bullet(medium_blast_params)
 
@@ -82,7 +111,10 @@ heavy_blast_params = {
 	"ttl" : 10000,
 	"initial_speed" : 0.1,
 	"fire_rate" : 3000,
-	"color" : (255,0,0)
+	"color" : (255,0,0),
+	"fire_sound" : "heavy_blast",
+	"hit_sound" : "blast_hit",
+	"sound_player" : sound_player
 }
 heavy_blast = Bullet(heavy_blast_params)
 
@@ -100,7 +132,9 @@ fighter_params = {
 	"forcefield_strength" : 0.00001,
 	"weapon" : light_blast,
 	"resource_cost" : 10,
-	"entities_to_add" : entities_to_add
+	"entities_to_add" : entities_to_add,
+	"destroyed_sound" : "destroyed",
+	"sound_player" : sound_player
 }
 
 # Battlecruiser
@@ -116,7 +150,9 @@ battlecruiser_params = {
 	"forcefield_strength" : 0.00005,
 	"weapon" : medium_blast,
 	"resource_cost" : 50,
-	"entities_to_add" : entities_to_add
+	"entities_to_add" : entities_to_add,
+	"destroyed_sound" : "destroyed",
+	"sound_player" : sound_player
 }
 
 # Battleship
@@ -132,7 +168,9 @@ battleship_params = {
 	"forcefield_strength" : 0.0001,
 	"weapon" : heavy_blast,
 	"resource_cost" : 100,
-	"entities_to_add" : entities_to_add
+	"entities_to_add" : entities_to_add,
+	"destroyed_sound" : "destroyed",
+	"sound_player" : sound_player
 }
 
 # Alien mothership
@@ -188,7 +226,10 @@ alien_mothership_params = {
 	"weapon" : None,
 	"blueprints" : alien_blueprints,
 	"resource_cost" : 9999,
-	"name" : "alien_mothership"
+	"name" : "alien_mothership",
+	"spawn_sound" : "spawn",
+	"destroyed_sound" : "destroyed",
+	"sound_player" : sound_player
 }
 
 alien_mothership = AlienMothership(alien_mothership_params, entities_to_add)
@@ -253,7 +294,10 @@ terran_mothership_params = {
 	"weapon" : None,
 	"blueprints" : terran_blueprints,
 	"resource_cost" : 9999,
-	"name" : "terran_mothership"
+	"name" : "terran_mothership",
+	"spawn_sound" : "spawn",
+	"destroyed_sound" : "destroyed",
+	"sound_player" : sound_player
 }
 terran_mothership = TerranMothership(terran_mothership_params, entities_to_add)
 
@@ -265,28 +309,6 @@ terran_mothership_controller = TerranMothershipAIController(terran_mothership_co
 
 entities.append(terran_mothership)
 entities.append(terran_mothership_controller)
-
-# Add test fighters
-for i in range(0):
-	params = copy.copy(fighterParams)
-	params["position"] = Vector2(random.randint(0, WORLD_RECT.width), random.randint(0, WORLD_RECT.height))
-	
-	params["team"] = "blue"
-	params["graphic"] = graphics["terran_fighter"]
-	params["graphic_direction"] = graphics_direction["terran_fighter"]
-	params["graphic_scale"] = 0.1
-
-	ship = Ship(params, entities_to_add)
-
-	controller_params = {
-		"ship" : ship,
-		"cruise_speed" : 0.5,
-		"world_rect" : WORLD_RECT
-	}
-
-	controller = FighterAIController(controller_params)
-	entities.append(ship)
-	entities.append(controller)
 
 # Minimap
 minimap_params = {
@@ -300,16 +322,7 @@ entities.append(Minimap(minimap_params))
 stats = PlayerStats(alien_mothership)
 entities.append(stats)
 
-# Viewport
-viewport_params = {
-	"position" : Vector2(1000 - SCREEN_RESOLUTION[0]/2, 1000 - SCREEN_RESOLUTION[1]/2),
-	"panning_speed" : 50,
-	"screen_resolution" : SCREEN_RESOLUTION_V,
-	"pan_border_width" : 70,
-	"world_rect" : WORLD_RECT
-}
-viewport = Viewport(viewport_params)
-entities.append(viewport)
+
 
 # MissionSelector
 ms = MissionSelector(viewport, alien_mothership)

@@ -75,10 +75,6 @@ class TerranMothershipAIController(object):
 		bcs = self.ship.blueprints[1][0]["resource_cost"]
 		bss = self.ship.blueprints[2][0]["resource_cost"]
 
-		print fs
-		print bcs
-		print bss
-
 		l = [(fc+1)*fs, (bcc+1)*bcs, (bsc+1)*bss]
 		mx = 9999999
 		mxi = -1

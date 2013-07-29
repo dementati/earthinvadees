@@ -165,8 +165,6 @@ class ShipStats(object):
 	def update(self, dt, entities):
 		mp = pygame.mouse.get_pos()
 
-		print self.ship
-
 		for entity in entities:
 			if isinstance(entity, Ship):
 				bb = self.viewport.world2screen_rect(entity.bb)
@@ -183,3 +181,15 @@ class ShipStats(object):
 			text = "Shield: " + str(self.ship.shield)
 			label = self.font.render(text, 1, (255,255,255))
 			surface.blit(label, (bb.topleft[0], bb.topleft[1] - 14))
+
+class SoundPlayer(object):
+	def __init__(self, sounds, viewport):
+		self.viewport = viewport
+		self.sounds = sounds
+
+	def play(self, sound, position):
+		dist = (self.viewport.position - position).get_magnitude()
+		avg_wh = (float(self.viewport.world_rect.width) + float(self.viewport.world_rect.height))/2.0
+		vol = (1.0 - float(dist)/float(avg_wh))**4
+		self.sounds[sound].set_volume(vol)
+		self.sounds[sound].play()

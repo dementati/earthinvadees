@@ -36,6 +36,8 @@ class Ship(object):
 		self.last_detected = None
 		self.resource_cost = params["resource_cost"]
 		self.name = params["name"]
+		self.destroyed_sound = params["destroyed_sound"]
+		self.sound_player = params["sound_player"]
 
 		if self.team == "blue":
 			self.color = Vector3(0, 0, 255)
@@ -56,12 +58,13 @@ class Ship(object):
 
 	def fire(self):
 		if self.last_fired > self.weapon.fire_rate:
-			shot = copy.deepcopy(self.weapon)
+			shot = copy.copy(self.weapon)
 			shot.set_direction(self.direction)
 			radius = max([self.graphic.get_width(), self.graphic.get_height()])*self.graphic_scale
 			shot.set_position(self.position + self.direction*(radius+10))
 			self.entities_to_add.append(shot)
 			self.last_fired = 0
+			shot.sound_player.play(shot.fire_sound, self.position)
 
 	def collides(self, entity):
 		return hasattr(entity, "bb") and self.bb.colliderect(entity.bb)
@@ -93,6 +96,7 @@ class Ship(object):
 		self.detect_enemies(entities)
 
 		if self.shield < 0:
+			self.sound_player.play(self.destroyed_sound, self.position)
 			self.die = True
 		
 		if self.last_fired < 9999999:
@@ -114,7 +118,8 @@ class Ship(object):
 		surface.blit(img, (px, py))
 
 		if RENDER_BB:
-			pygame.draw.rect(surface, (255, 255, 255), self.bb, 1) 
+			bb = viewport.world2screen_rect(self.bb)
+			pygame.draw.rect(surface, (255, 255, 255), bb, 1) 
 
 		if RENDER_FORCEFIELD:
 			px = int(self.position.x)
@@ -128,11 +133,14 @@ class TerranMothership(Ship):
 		self.resource_growth_rate = 1000
 		self.last_growth = 0
 		self.mission = None
+		self.spawn_sound = params["spawn_sound"]
 		super(TerranMothership, self).__init__(params, entities_to_add)
 
 	def spawn(self, index):
 		blueprint = self.blueprints[index][0]
 		if self.resources >= blueprint["resource_cost"]:
+			self.sound_player.play(self.spawn_sound, self.position)
+
 			self.resources -= blueprint["resource_cost"]
 
 			ship = Ship(blueprint, self.entities_to_add)
@@ -162,6 +170,7 @@ class AlienMothership(Ship):
 		self.resource_growth_rate = 1000
 		self.last_growth = 0
 		self.mission = None
+		self.spawn_sound = params["spawn_sound"]
 		super(AlienMothership, self).__init__(params, entities_to_add)
 
 	def move_left(self, dt):
@@ -179,6 +188,8 @@ class AlienMothership(Ship):
 	def spawn(self, index):
 		blueprint = self.blueprints[index][0]
 		if self.resources >= blueprint["resource_cost"]:
+			self.sound_player.play(self.spawn_sound, self.position)
+
 			self.resources -= blueprint["resource_cost"]
 
 			ship = Ship(blueprint, self.entities_to_add)
@@ -213,6 +224,9 @@ class Bullet(object):
 		self.bb = Rect(0, 0, 2*self.radius, 2*self.radius)
 		self.bb.center = self.position
 		self.color = params["color"]
+		self.fire_sound = params["fire_sound"]
+		self.hit_sound = params["hit_sound"]
+		self.sound_player = params["sound_player"]
 
 	def set_position(self, position):
 		self.position = position
@@ -225,13 +239,16 @@ class Bullet(object):
 		return hasattr(entity, "bb") and self.bb.colliderect(entity.bb)
 
 	def collided(self, entity):
-		self.die = True
+		if not isinstance(entity, Bullet):
+			self.sound_player.play(self.hit_sound, self.position)
+			self.die = True
 
 	def update(self, dt, entities):
 		self.position += dt*self.velocity
+		self.bb = Rect(0, 0, 2*self.radius, 2*self.radius)
 		self.bb.center = self.position
 		self.ttl -= dt
-		
+
 		if self.ttl < 0:
 			self.die = True
 
@@ -242,7 +259,8 @@ class Bullet(object):
 		pygame.draw.circle(surface, self.color, (px, py), self.radius) 
 
 		if RENDER_BB:
-			pygame.draw.rect(surface, (255, 255, 255), self.bb)
+			bb = viewport.world2screen_rect(self.bb)
+			pygame.draw.rect(surface, (255, 255, 255), bb, 1)
 
 
 from controllers import FighterAIController
