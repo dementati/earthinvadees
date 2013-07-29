@@ -150,6 +150,15 @@ class FighterAIController(object):
 	def update(self, dt, entities):
 		if not self.world_rect.colliderect(self.ship.bb):
 			self.head_for(dt, Vector2(self.world_rect.center))
+		elif isinstance(self.target, Ship):
+			if hasattr(self.target, "die"):
+				self.target = None
+			else:
+				self.attack(dt, self.target)
+				
+				dist = (self.target.position - self.ship.position).get_magnitude()
+				if dist > self.ship.sensor_range:
+					self.target = None
 		elif type(self.mission) == Vector2 or isinstance(self.mission, Ship):
 			if type(self.mission) == Vector2:
 				self.head_for(dt, self.mission)
@@ -164,18 +173,9 @@ class FighterAIController(object):
 				else:
 					self.attack(dt, self.mission)
 
-		elif isinstance(self.target, Ship):
-			if hasattr(self.target, "die"):
-				self.target = None
-			else:
-				self.attack(dt, self.target)
-				
-				dist = (self.target.position - self.ship.position).get_magnitude()
-				if dist > self.ship.sensor_range:
-					self.target = None
-		else:
-			self.stop(dt)
+		if not isinstance(self.target, Ship):
 			self.target = self.ship.last_detected
 
-
+		if not isinstance(self.target, Ship) and not isinstance(self.mission, Ship) and not isinstance(self.mission, Vector2):
+			self.stop(dt)
 

@@ -42,7 +42,7 @@ graphics_direction = {
 	"alien_fighter" : Vector2(1,0),
 	"alien_battlecruiser" : Vector2(-1,0),
 	"alien_mothership" : Vector2(0,-1),
-	"terran_fighter" : Vector2(0,-1),
+	"terran_fighter" : Vector2(-1,0),
 	"terran_battlecruiser" : Vector2(-1,0),
 	"terran_mothership" : Vector2(-1,0)
 }
