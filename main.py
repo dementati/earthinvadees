@@ -275,6 +275,10 @@ entities.append(viewport)
 ms = MissionSelector(viewport, alien_mothership)
 entities.append(ms)
 
+# Spawn bar
+sb = SpawnBar(alien_mothership)
+entities.append(sb)
+
 # Main game loop
 win = True
 run = True
@@ -334,7 +338,11 @@ while True:
 	# Render
 	screen.blit(graphics["background"], (0, 0))
 	for entity in entities:
-		if hasattr(entity, "render"):
+		if hasattr(entity, "render") and not hasattr(entity, "gui"):
+			entity.render(screen, viewport)
+
+	for entity in entities:
+		if hasattr(entity, "render") and hasattr(entity, "gui"):
 			entity.render(screen, viewport)
 
 	if not run:

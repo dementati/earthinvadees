@@ -10,6 +10,7 @@ class Minimap(object):
 		self.world_size = params["world_size"]
 		self.screen_resolution = params["screen_resolution"]
 		self.entities = []
+		self.gui = True
 
 	def project_position(self, position):
 		return position*self.map_size/self.world_size
@@ -86,6 +87,7 @@ class PlayerStats(object):
 	def __init__(self, mothership):
 		self.mothership = mothership
 		self.font = pygame.font.SysFont("Monospace", 20, bold=True)
+		self.gui = True
 
 	def render(self, surface, viewport):
 		y = 0
@@ -102,6 +104,7 @@ class MissionSelector(object):
 		self.viewport = viewport
 		self.entities = []
 		self.mothership = mothership
+		self.gui = True
 
 	def handle_event(self, event):	
 		if event.type == MOUSEBUTTONDOWN:
@@ -130,3 +133,26 @@ class MissionSelector(object):
 			else:
 				sr = viewport.world2screen_rect(self.mothership.mission.bb)
 				pygame.draw.rect(surface, (255, 0, 255), sr, 1)
+
+class SpawnBar(object):
+	def __init__(self, mothership):
+		self.mothership = mothership
+		self.position = Vector2(200,0)
+		self.slot_dimension = (100, 100)
+		self.gui = True
+
+	def render(self, surface, viewport):
+		print self.position
+		pos = copy.deepcopy(self.position)
+		i = 1
+		font = pygame.font.SysFont("monospace", 14, bold=True)
+		for (blueprint, ai) in self.mothership.blueprints:
+			dim = util.v2i_tuple(Vector2(blueprint["graphic"].get_size())*blueprint["graphic_scale"])
+			g = pygame.transform.scale(blueprint["graphic"], dim)
+			surface.blit(g, (int(pos.x + self.slot_dimension[0]/2 - dim[0]/2), int(pos.y + self.slot_dimension[1]/2 - dim[1]/2)))
+			label = font.render(str(i), 1, (255,255,255))
+			surface.blit(label, util.v2i_tuple(pos))
+			label = font.render(str(blueprint["resource_cost"]), 1, (255, 255, 255))
+			surface.blit(label, util.v2i_tuple(pos + Vector2(0, self.slot_dimension[0] - 14)))
+			pos.x += self.slot_dimension[0]
+			i += 1
