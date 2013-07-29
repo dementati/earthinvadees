@@ -138,7 +138,7 @@ class SpawnBar(object):
 	def __init__(self, mothership):
 		self.mothership = mothership
 		self.position = Vector2(200,0)
-		self.slot_dimension = (100, 100)
+		self.slot_dimension = (200, 140)
 		self.gui = True
 		self.font = pygame.font.SysFont("monospace", 14, bold=True)
 
@@ -152,7 +152,7 @@ class SpawnBar(object):
 			label = self.font.render(str(i), 1, (255,255,255))
 			surface.blit(label, util.v2i_tuple(pos))
 			label = self.font.render(str(blueprint["resource_cost"]), 1, (255, 255, 255))
-			surface.blit(label, util.v2i_tuple(pos + Vector2(0, self.slot_dimension[0] - 14)))
+			surface.blit(label, util.v2i_tuple(pos + Vector2(0, self.slot_dimension[1] - 14)))
 			pos.x += self.slot_dimension[0]
 			i += 1
 

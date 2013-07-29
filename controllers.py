@@ -32,6 +32,8 @@ class AlienMothershipPlayerController(object):
 				self.ship.spawn(0)
 			elif event.key == K_2:
 				self.ship.spawn(1)
+			elif event.key == K_3:
+				self.ship.spawn(2)
 
 	def update(self, dt, entities):
 		if not self.world_rect.colliderect(self.ship.bb):
@@ -54,24 +56,38 @@ class TerranMothershipAIController(object):
 		self.world_rect = params["world_rect"]
 
 	def update(self, dt, entities):
-		fighter_count = 0
-		battlecruiser_count = 0
+		fc = 0
+		bcc = 0
+		bsc = 0
 		for entity in entities:
 			if isinstance(entity, Ship): 
 				if entity.name == "alien_mothership":
 					self.ship.mission = entity
 
 				if entity.name == "terran_fighter":
-					fighter_count += 1
+					fc += 1
 				elif entity.name == "terran_battlecruiser":
-					battlecruiser_count += 1
+					bcc += 1
+				elif entity.name == "terran_battleship":
+					bsc += 1
 
-		fighter_cost = self.ship.blueprints[0][0]["resource_cost"]
-		battlecruiser_cost = self.ship.blueprints[1][0]["resource_cost"]
-		if fighter_count*fighter_cost > battlecruiser_count*battlecruiser_cost and self.ship.resources >= battlecruiser_cost:
-			self.ship.spawn(1)
-		elif self.ship.resources >= fighter_cost:
-			self.ship.spawn(0)
+		fs = self.ship.blueprints[0][0]["resource_cost"]
+		bcs = self.ship.blueprints[1][0]["resource_cost"]
+		bss = self.ship.blueprints[2][0]["resource_cost"]
+
+		print fs
+		print bcs
+		print bss
+
+		l = [(fc+1)*fs, (bcc+1)*bcs, (bsc+1)*bss]
+		mx = 9999999
+		mxi = -1
+		for i in range(len(l)):
+			if l[i] < mx:
+				mx = l[i]
+				mxi = i
+
+		self.ship.spawn(mxi)
 
 class FighterAIController(object):
 	def __init__(self, params):

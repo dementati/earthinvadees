@@ -32,18 +32,22 @@ graphics = {
 	"background" : pygame.image.load("/home/dementati/Downloads/bg1024x768.png"),
 	"alien_fighter" : pygame.image.load("/home/dementati/Downloads/smallship.png"),
 	"alien_battlecruiser" : pygame.image.load("/home/dementati/Downloads/aliencruiser.png"),
+	"alien_battleship" : pygame.image.load("/home/dementati/Downloads/alienbattleship.png"),
 	"alien_mothership" : pygame.image.load("/home/dementati/Downloads/mother.png"),
 	"terran_fighter" : pygame.image.load("/home/dementati/Downloads/humansmallship.png"),
 	"terran_battlecruiser" : pygame.image.load("/home/dementati/Downloads/terrancruiser.png"),
+	"terran_battleship" : pygame.image.load("/home/dementati/Downloads/terranbattleship.png"),
 	"terran_mothership" : pygame.image.load("/home/dementati/Downloads/mothership.png")
 }
 
 graphics_direction = {
 	"alien_fighter" : Vector2(1,0),
 	"alien_battlecruiser" : Vector2(-1,0),
+	"alien_battleship" : Vector2(1,0),
 	"alien_mothership" : Vector2(0,-1),
 	"terran_fighter" : Vector2(-1,0),
 	"terran_battlecruiser" : Vector2(-1,0),
+	"terran_battleship" : Vector2(1,0),
 	"terran_mothership" : Vector2(-1,0)
 }
 
@@ -105,9 +109,25 @@ battlecruiser_params = {
 	"shield" : 100,
 	"sensor_range" : 1000,
 	"forcefield_radius" : 100,
-	"forcefield_strength" : 0.00001,
+	"forcefield_strength" : 0.00005,
 	"weapon" : medium_blast,
 	"resource_cost" : 50,
+	"entities_to_add" : entities_to_add
+}
+
+# Battleship
+battleship_params = {
+	"position" : Vector2(),
+	"direction" : Vector2(0, 1),
+	"thrust" : 0.00001,
+	"max_speed" : 20,
+	"turn_speed" : 0.01*math.pi/180,
+	"shield" : 250,
+	"sensor_range" : 1500,
+	"forcefield_radius" : 100,
+	"forcefield_strength" : 0.0001,
+	"weapon" : heavy_blast,
+	"resource_cost" : 100,
 	"entities_to_add" : entities_to_add
 }
 
@@ -126,6 +146,13 @@ alien_battlecruiser_blueprint["graphic_direction"] = graphics_direction["alien_b
 alien_battlecruiser_blueprint["graphic_scale"] = 1
 alien_battlecruiser_blueprint["name"] = "alien_battlecruiser"
 
+alien_battleship_blueprint = copy.copy(battleship_params)
+alien_battleship_blueprint["team"] = "red"
+alien_battleship_blueprint["graphic"] = graphics["alien_battleship"]
+alien_battleship_blueprint["graphic_direction"] = graphics_direction["alien_battleship"]
+alien_battleship_blueprint["graphic_scale"] = 1
+alien_battleship_blueprint["name"] = "alien_battleship"
+
 alien_controller_params = {
 	"cruise_speed" : 0.0002,
 	"world_rect" : WORLD_RECT
@@ -134,6 +161,7 @@ alien_controller_params = {
 alien_blueprints = []
 alien_blueprints.append((alien_fighter_blueprint, alien_controller_params))
 alien_blueprints.append((alien_battlecruiser_blueprint, alien_controller_params))
+alien_blueprints.append((alien_battleship_blueprint, alien_controller_params))
 
 alien_mothership_params = {
 	"position" : Vector2(1000, 1000),
@@ -185,6 +213,13 @@ terran_battlecruiser_blueprint["graphic_direction"] = graphics_direction["terran
 terran_battlecruiser_blueprint["graphic_scale"] = 1
 terran_battlecruiser_blueprint["name"] = "terran_battlecruiser"
 
+terran_battleship_blueprint = copy.copy(battleship_params)
+terran_battleship_blueprint["team"] = "blue"
+terran_battleship_blueprint["graphic"] = graphics["terran_battleship"]
+terran_battleship_blueprint["graphic_direction"] = graphics_direction["terran_battleship"]
+terran_battleship_blueprint["graphic_scale"] = 1
+terran_battleship_blueprint["name"] = "terran_battleship"
+
 terran_controller_params = {
 	"cruise_speed" : 0.5,
 	"world_rect" : WORLD_RECT
@@ -193,6 +228,7 @@ terran_controller_params = {
 terran_blueprints = []
 terran_blueprints.append((terran_fighter_blueprint, terran_controller_params))
 terran_blueprints.append((terran_battlecruiser_blueprint, terran_controller_params))
+terran_blueprints.append((terran_battleship_blueprint, terran_controller_params))
 
 terran_mothership_params = {
 	"position" : Vector2(4000, 4000),
