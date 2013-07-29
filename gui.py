@@ -20,7 +20,7 @@ class Minimap(object):
 		return position * self.world_size/self.map_size
 
 	def handle_event(self, event):
-		if event.type == MOUSEBUTTONDOWN:
+		if event.type == MOUSEBUTTONDOWN and pygame.mouse.get_pressed()[2]:
 			mp = pygame.mouse.get_pos()
 			rect = Rect((0, self.screen_resolution.y - self.map_size.y), util.v2i_tuple(self.map_size))
 
@@ -43,6 +43,10 @@ class Minimap(object):
 			if isinstance(entity, Ship):
 				width = 1
 				if isinstance(entity, AlienMothership) or isinstance(entity, TerranMothership):
+					width = 7
+				if entity.name == "alien_battlecruiser" or entity.name == "terran_battlecruiser":
+					width = 3
+				if entity.name == "alien_battleship" or entity.name == "terran_battleship":
 					width = 5
 
 				color = (255,0,0) if entity.team == "red" else (0,0,255)
@@ -127,17 +131,20 @@ class MissionSelector(object):
 
 	def handle_event(self, event):	
 		if event.type == MOUSEBUTTONDOWN:
-			mp = Vector2(pygame.mouse.get_pos())	
-			wp = self.viewport.screen2world_coordinates(mp)
+			if pygame.mouse.get_pressed()[0]:
+				mp = Vector2(pygame.mouse.get_pos())	
+				wp = self.viewport.screen2world_coordinates(mp)
 
-			iwp = util.v2i_tuple(wp)
-			for entity in self.entities:
-				if isinstance(entity, TerranMothership):
-					if entity.bb.collidepoint(iwp):
-						self.mothership.mission = entity
-						return
+				iwp = util.v2i_tuple(wp)
+				for entity in self.entities:
+					if isinstance(entity, TerranMothership):
+						if entity.bb.collidepoint(iwp):
+							self.mothership.mission = entity
+							return
 
-			self.mothership.mission = wp
+				self.mothership.mission = wp
+			else:
+				self.mothership.mission = None
 
 	def update(self, dt, entities):
 		self.entities = entities

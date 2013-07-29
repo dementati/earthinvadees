@@ -204,8 +204,8 @@ class FighterAIController(object):
 		s2t = target.position - self.ship.position
 
 		a = self.align_to(dt, s2t)
-		if math.fabs(a) < 10:
-			if s2t.get_magnitude() < 2000:
+		if math.fabs(a) < 5:
+			if s2t.get_magnitude() < 1500:
 				self.ship.fire()
 
 				v = util.project_v(self.ship.velocity, s2t)
