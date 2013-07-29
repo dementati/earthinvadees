@@ -140,19 +140,46 @@ class SpawnBar(object):
 		self.position = Vector2(200,0)
 		self.slot_dimension = (100, 100)
 		self.gui = True
+		self.font = pygame.font.SysFont("monospace", 14, bold=True)
 
 	def render(self, surface, viewport):
-		print self.position
 		pos = copy.deepcopy(self.position)
 		i = 1
-		font = pygame.font.SysFont("monospace", 14, bold=True)
 		for (blueprint, ai) in self.mothership.blueprints:
 			dim = util.v2i_tuple(Vector2(blueprint["graphic"].get_size())*blueprint["graphic_scale"])
 			g = pygame.transform.scale(blueprint["graphic"], dim)
 			surface.blit(g, (int(pos.x + self.slot_dimension[0]/2 - dim[0]/2), int(pos.y + self.slot_dimension[1]/2 - dim[1]/2)))
-			label = font.render(str(i), 1, (255,255,255))
+			label = self.font.render(str(i), 1, (255,255,255))
 			surface.blit(label, util.v2i_tuple(pos))
-			label = font.render(str(blueprint["resource_cost"]), 1, (255, 255, 255))
+			label = self.font.render(str(blueprint["resource_cost"]), 1, (255, 255, 255))
 			surface.blit(label, util.v2i_tuple(pos + Vector2(0, self.slot_dimension[0] - 14)))
 			pos.x += self.slot_dimension[0]
 			i += 1
+
+class ShipStats(object):
+	def __init__(self, viewport):
+		self.ship = None
+		self.font = pygame.font.SysFont("monospace", 14, bold=True)
+		self.viewport = viewport
+
+	def update(self, dt, entities):
+		mp = pygame.mouse.get_pos()
+
+		print self.ship
+
+		for entity in entities:
+			if isinstance(entity, Ship):
+				bb = self.viewport.world2screen_rect(entity.bb)
+				if bb.collidepoint(mp):
+					self.ship = entity
+					return
+
+		self.ship = None
+
+	def render(self, surface, viewport):
+		if isinstance(self.ship, Ship):
+			bb = self.viewport.world2screen_rect(self.ship.bb)
+			pygame.draw.rect(surface, (255, 255, 0), bb, 1)
+			text = "Shield: " + str(self.ship.shield)
+			label = self.font.render(text, 1, (255,255,255))
+			surface.blit(label, (bb.topleft[0], bb.topleft[1] - 14))

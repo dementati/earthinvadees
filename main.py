@@ -279,6 +279,10 @@ entities.append(ms)
 sb = SpawnBar(alien_mothership)
 entities.append(sb)
 
+# Ship stats
+ss = ShipStats(viewport)
+entities.append(ss)
+
 # Main game loop
 win = True
 run = True
