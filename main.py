@@ -338,7 +338,7 @@ entities.append(ss)
 
 # Main game loop
 win = True
-run = True
+run = False
 while True:
 	dt = clock.tick(50)
 
@@ -406,7 +406,13 @@ while True:
 		font = pygame.font.SysFont("monospace", 72, bold=True)
 		text = "You win!"
 		if not win:
+			pygame.mixer.music.load("content/defeat.mp3")
+			pygame.mixer.music.play()
 			text = "You lose!"
+		else:
+			pygame.mixer.music.load("content/victory.mp3")
+			pygame.mixer.music.play()
+
 		label = font.render(text, 1, (255, 255, 255))
 		screen.blit(label, (SCREEN_RESOLUTION[0]/2 - label.get_rect().width/2, SCREEN_RESOLUTION[1]/2 - label.get_rect().height/2))
 		pygame.display.flip()
