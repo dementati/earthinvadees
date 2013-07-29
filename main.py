@@ -18,11 +18,15 @@ SCREEN_RESOLUTION = (1024, 768)
 SCREEN_RESOLUTION_V = Vector2(1024, 768)
 SCREEN_RECT = Rect((0,0), SCREEN_RESOLUTION)
 WORLD_RECT = Rect(0, 0, 5000, 5000)
+SHOW_FPS = True
 
 # General initialization
 pygame.mixer.pre_init(44100, -16, 2, 2048)
 pygame.init()
-window = pygame.display.set_mode(SCREEN_RESOLUTION)
+flags = FULLSCREEN | DOUBLEBUF
+window = pygame.display.set_mode(SCREEN_RESOLUTION, flags)
+window.set_alpha(None)
+pygame.event.set_allowed([QUIT, KEYDOWN, MOUSEBUTTONDOWN])
 screen = pygame.display.get_surface()
 clock = pygame.time.Clock()
 entities_to_add = []
@@ -337,6 +341,10 @@ entities.append(sb)
 ss = ShipStats(viewport)
 entities.append(ss)
 
+# FPS
+fps = FPSDisplay(clock)
+entities.append(fps)
+
 # Main game loop
 win = True
 run = True
@@ -397,7 +405,11 @@ while True:
 	screen.blit(graphics["background"], (0, 0))
 	for entity in entities:
 		if hasattr(entity, "render") and not hasattr(entity, "gui"):
-			entity.render(screen, viewport)
+			if hasattr(entity, "bb"):
+				if entity.bb.colliderect(viewport.rect):
+					entity.render(screen, viewport)
+			else:
+				entity.render(screen, viewport)
 
 	for entity in entities:
 		if hasattr(entity, "render") and hasattr(entity, "gui"):

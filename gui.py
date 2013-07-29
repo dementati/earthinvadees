@@ -49,7 +49,7 @@ class Minimap(object):
 		surface.blit(minimap, (0, self.screen_resolution.y - self.map_size.y))
 		r = minimap.get_rect()
 		r.topleft = (0, self.screen_resolution.y - self.map_size.y) 
-		pygame.draw.rect(surface, (0, 255, 0), r, 1)
+		pygame.draw.rect(surface, (0, 125, 0), r, 1)
 
 class Viewport:
 	def __init__(self, params):
@@ -58,6 +58,7 @@ class Viewport:
 		self.screen_resolution = params["screen_resolution"]
 		self.pan_border_width = params["pan_border_width"]
 		self.world_rect = params["world_rect"]
+		self.rect = Rect(util.v2i_tuple(self.position), util.v2i_tuple(self.screen_resolution))
 
 	def world2screen_coordinates(self, position):
 		return position - self.position
@@ -72,6 +73,8 @@ class Viewport:
 		return position + self.position
 
 	def update(self, dt, entities):
+		self.rect = Rect(util.v2i_tuple(self.position), util.v2i_tuple(self.screen_resolution))
+
 		mp = pygame.mouse.get_pos()
 
 		if mp[0] > self.screen_resolution.x - self.pan_border_width and self.position.x < self.world_rect.width - self.screen_resolution.x:
@@ -193,3 +196,14 @@ class SoundPlayer(object):
 		vol = (1.0 - float(dist)/float(avg_wh))**4
 		self.sounds[sound].set_volume(vol)
 		self.sounds[sound].play()
+
+class FPSDisplay(object):
+	def __init__(self, clock):
+		self.clock = clock
+		self.font = pygame.font.SysFont("monospace", 14)
+		self.gui = True
+
+	def render(self, surface, viewport):
+		text = "FPS: " + str(self.clock.get_fps())
+		label = self.font.render(text, 1, (255, 255, 255))
+		surface.blit(label, (surface.get_rect().width - label.get_rect().width, 0))
