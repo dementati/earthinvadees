@@ -352,8 +352,8 @@ ss = ShipStats(viewport)
 entities.append(ss)
 
 # FPS
-fps = FPSDisplay(clock)
-entities.append(fps)
+dd = DebugData(clock)
+entities.append(dd)
 
 # Splash screen
 pygame.mixer.music.load("content/splash.mp3")

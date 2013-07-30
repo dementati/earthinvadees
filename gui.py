@@ -223,13 +223,20 @@ class SoundPlayer(object):
 		self.sounds[sound].set_volume(vol)
 		self.sounds[sound].play()
 
-class FPSDisplay(object):
+class DebugData(object):
 	def __init__(self, clock):
 		self.clock = clock
 		self.font = pygame.font.SysFont("monospace", 14)
 		self.gui = True
+		self.entities = []
+
+	def render_text(self, surface, text, line):
+		label = self.font.render(text, 1, (255, 255, 255))
+		surface.blit(label, (surface.get_rect().width - label.get_rect().width, line*14))
+
+	def update(self, dt, entities):
+		self.entities = entities
 
 	def render(self, surface, viewport):
-		text = "FPS: " + str(self.clock.get_fps())
-		label = self.font.render(text, 1, (255, 255, 255))
-		surface.blit(label, (surface.get_rect().width - label.get_rect().width, 0))
+		self.render_text(surface, "FPS: " + str(self.clock.get_fps()), 0)
+		self.render_text(surface, "Entities: " + str(len(self.entities)), 1)
