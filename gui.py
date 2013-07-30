@@ -59,6 +59,9 @@ class Minimap(object):
 				px = int(ppos.x)
 				py = int(ppos.y)
 				pygame.draw.circle(minimap, (255, 255, 0), (px, py), 1)
+			elif isinstance(entity, GravityWell):
+				pos = util.v2i_tuple(self.project_position(entity.position))
+				pygame.draw.circle(minimap, (255, 255, 255), pos, 1)
 			elif isinstance(entity, Viewport):
 				ppos = self.project_position(entity.position)
 				ppost = (int(ppos.x), int(ppos.y))

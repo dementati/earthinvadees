@@ -14,8 +14,8 @@ from controllers import *
 from gui import *
 
 # Global parameters
-SCREEN_RESOLUTION = (1024, 768)
-SCREEN_RESOLUTION_V = Vector2(1024, 768)
+SCREEN_RESOLUTION = (1920, 1200)
+SCREEN_RESOLUTION_V = Vector2(SCREEN_RESOLUTION)
 SCREEN_RECT = Rect((0,0), SCREEN_RESOLUTION)
 WORLD_RECT = Rect(0, 0, 5000, 5000)
 SHOW_FPS = True
@@ -33,7 +33,8 @@ entities = []
 
 # Sprites
 graphics = {
-	"background" : pygame.image.load("content/bg1024x768.png").convert_alpha(),
+	"splash" : pygame.image.load("content/splash.png").convert_alpha(),
+	"background" : pygame.image.load("content/bg.png").convert_alpha(),
 	"alien_fighter" : pygame.image.load("content/smallship.png").convert_alpha(),
 	"alien_battlecruiser" : pygame.image.load("content/aliencruiser.png").convert_alpha(),
 	"alien_battleship" : pygame.image.load("content/alienbattleship.png").convert_alpha(),
@@ -78,8 +79,6 @@ sound_effects = {
 
 sound_player = SoundPlayer(sound_effects, viewport)
 
-pygame.mixer.music.load("content/background.mp3")
-pygame.mixer.music.play(-1)
 
 # Weapons
 light_blast_params = {
@@ -314,6 +313,17 @@ terran_mothership_controller = TerranMothershipAIController(terran_mothership_co
 entities.append(terran_mothership)
 entities.append(terran_mothership_controller)
 
+# Gravity wells
+for i in range(4):
+	pos = Vector2(random.random(), random.random()) * Vector2(WORLD_RECT.size)
+	well_params = {
+		"position" : pos,
+		"strength" : 0.0003
+	}
+
+	well = GravityWell(well_params)
+	entities.append(well)
+
 # Player stats
 stats = PlayerStats(alien_mothership)
 entities.append(stats)
@@ -345,7 +355,23 @@ entities.append(ss)
 fps = FPSDisplay(clock)
 entities.append(fps)
 
+# Splash screen
+pygame.mixer.music.load("content/splash.mp3")
+pygame.mixer.music.play(-1)
+
+run = True
+while run:
+	for event in pygame.event.get():
+		if event.type == MOUSEBUTTONDOWN or event.type == KEYDOWN:
+			run = False
+
+	screen.blit(graphics["splash"], (0,0))
+	pygame.display.flip()
+
 # Main game loop
+pygame.mixer.music.load("content/background.mp3")
+pygame.mixer.music.play(-1)
+
 win = True
 run = True
 while True:

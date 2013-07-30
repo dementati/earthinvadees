@@ -44,17 +44,17 @@ class Ship(object):
 		elif self.team == "red":
 			self.color = Vector3(255, 0, 0)
 
-	def accelerate(self, dt):
-		self.velocity += dt*self.thrust*self.direction
+	def accelerate(self, dt, magnitude=1):
+		self.velocity += dt*self.thrust*self.direction*magnitude
 
-	def decelerate(self, dt):
-		self.velocity -= dt*self.thrust*self.direction
+	def decelerate(self, dt, magnitude=1):
+		self.velocity -= dt*self.thrust*self.direction*magnitude
 
-	def turn_left(self, dt):
-		self.direction = util.rotate_v(self.direction, -dt*self.turn_speed)
+	def turn_left(self, dt, magnitude=1):
+		self.direction = util.rotate_v(self.direction, -dt*self.turn_speed*magnitude)
 
-	def turn_right(self, dt):
-		self.direction = util.rotate_v(self.direction, dt*self.turn_speed)
+	def turn_right(self, dt, magnitude=1):
+		self.direction = util.rotate_v(self.direction, dt*self.turn_speed*magnitude)
 
 	def fire(self):
 		if self.last_fired > self.weapon.fire_rate:
@@ -262,5 +262,15 @@ class Bullet(object):
 			bb = viewport.world2screen_rect(self.bb)
 			pygame.draw.rect(surface, (255, 255, 255), bb, 1)
 
+class GravityWell(object):
+	def __init__(self, params):
+		self.position = params["position"]
+		self.strength = params["strength"]
+
+	def update(self, dt, entities):
+		for entity in entities:
+			if hasattr(entity, "position") and hasattr(entity, "velocity"):
+				e2w = self.position - entity.position
+				entity.velocity += e2w.normalize()*self.strength/e2w.get_magnitude()**2
 
 from controllers import FighterAIController
