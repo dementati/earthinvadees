@@ -1,0 +1,8 @@
+=== Dependencies ===
+Python 2.7
+Pygame 1.9.1
+gameobjects 0.0.3
+
+=== Installation ===
+1. Install dependencies
+2. Execute run.bat or run.sh depending on your OS 
